@@ -25,7 +25,9 @@ from core.utils.widgets.quick_launch.providers import (
     SnippetsProvider,
     SystemCommandsProvider,
     UnitConverterProvider,
+    VSCodeProvider,
     WebSearchProvider,
+    WindowSwitcherProvider,
     WorldClockProvider,
 )
 from core.utils.widgets.quick_launch.workers import QueryWorker, StartMenuWatcherThread
@@ -49,7 +51,9 @@ PROVIDER_REGISTRY: dict[str, type[BaseProvider]] = {
     "system_commands": SystemCommandsProvider,
     "unit_converter": UnitConverterProvider,
     "web_search": WebSearchProvider,
+    "window_switcher": WindowSwitcherProvider,
     "world_clock": WorldClockProvider,
+    "vscode": VSCodeProvider,
 }
 
 
@@ -70,7 +74,7 @@ class QuickLaunchService(QObject):
 
     def __init__(self):
         super().__init__()
-        # State
+
         self._apps: list[tuple[str, str, object]] = []
         self._apps_loaded = False
         self._icon_paths: dict[str, str] = {}
@@ -78,7 +82,6 @@ class QuickLaunchService(QObject):
         self._providers_config: dict = {}
         self._show_icons: bool = True
 
-        # Workers
         self._app_loader: AppListLoader | None = None
         self._icon_worker: IconResolverWorker | None = None
         self._query_worker = QueryWorker()
@@ -86,13 +89,8 @@ class QuickLaunchService(QObject):
         self._query_worker.start()
         self._query_counter = 0
 
-        # Paths
         self._icons_dir = os.path.join(tempfile.gettempdir(), "yasb_quick_launch_icons")
         os.makedirs(self._icons_dir, exist_ok=True)
-
-        # Init
-        self._setup_fs_watcher()
-        self._start_app_loading()
 
     @property
     def providers(self) -> list[BaseProvider]:
@@ -116,15 +114,23 @@ class QuickLaunchService(QObject):
         self._providers_config = providers_config
         self._show_icons = show_icons
         self._providers.clear()
+        apps_enabled = False
         for name, cls in PROVIDER_REGISTRY.items():
             provider_cfg = providers_config.get(name, {})
             if not provider_cfg.get("enabled", True):
                 continue
+            if name == "apps":
+                apps_enabled = True
             provider_cfg["_max_results"] = max_results
             provider = cls(config=provider_cfg)
             provider.request_refresh = self.request_refresh.emit
             self._providers.append(provider)
         self._providers.sort(key=lambda p: p.priority)
+
+        if apps_enabled:
+            if not self._apps_loaded and not self._app_loader:
+                self._setup_fs_watcher()
+                self._start_app_loading()
 
     def async_query(self, text: str, max_results: int = 50) -> str:
         """Submit an async query. Returns a query_id to match results."""

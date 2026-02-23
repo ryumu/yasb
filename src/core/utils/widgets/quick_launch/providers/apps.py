@@ -3,13 +3,14 @@ import ctypes.wintypes
 import json
 import logging
 import os
-import threading
 import time
-import webbrowser
 
+import pythoncom
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import QApplication
+from win32comext.shell import shell
 
+from core.utils.shell_utils import shell_open
 from core.utils.utilities import app_data_path
 from core.utils.widgets.quick_launch.base_provider import (
     BaseProvider,
@@ -170,9 +171,6 @@ def _get_lnk_description(lnk_path: str) -> str | None:
     """Resolve a .lnk shortcut and return description from its target exe,
     falling back to the shortcut's own Description property, then target path."""
     try:
-        import pythoncom
-        from win32comext.shell import shell
-
         link = pythoncom.CoCreateInstance(
             shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink
         )
@@ -388,24 +386,20 @@ class AppsProvider(BaseProvider):
     def execute(self, result: ProviderResult) -> bool:
         name = result.action_data.get("name", "")
         path = result.action_data.get("path", "")
-        self._history.record(name, path)
-        threading.Thread(target=self._launch, args=(name, path), daemon=True).start()
-        return True
-
-    @staticmethod
-    def _launch(name: str, path: str):
         try:
             if path.startswith("UWP::"):
                 aumid = path.replace("UWP::", "")
-                os.startfile(f"shell:AppsFolder\\{aumid}")
+                shell_open(f"shell:AppsFolder\\{aumid}")
             elif path.startswith(("http://", "https://")):
-                webbrowser.open(path)
+                shell_open(path)
             elif os.path.isfile(path):
-                os.startfile(path)
+                shell_open(path)
             else:
                 logging.warning("Quick Launch: path not found: %s", path)
         except Exception as e:
             logging.error("Failed to launch %s: %s", name, e)
+        self._history.record(name, path)
+        return True
 
     def get_context_menu_actions(self, result: ProviderResult) -> list[ProviderMenuAction]:
         path = result.action_data.get("path", "")
@@ -448,9 +442,9 @@ class AppsProvider(BaseProvider):
             try:
                 if path.startswith("UWP::"):
                     aumid = path.replace("UWP::", "")
-                    ctypes.windll.shell32.ShellExecuteW(None, "runas", f"shell:AppsFolder\\{aumid}", None, None, 1)
+                    shell_open(f"shell:AppsFolder\\{aumid}", verb="runas")
                 elif os.path.isfile(path):
-                    ctypes.windll.shell32.ShellExecuteW(None, "runas", path, None, None, 1)
+                    shell_open(path, verb="runas")
                 self._history.record(name, path)
             except Exception as e:
                 logging.debug(f"Failed to run as admin: {e}")
@@ -459,10 +453,10 @@ class AppsProvider(BaseProvider):
         if action_id == "open_file_location":
             try:
                 target = self._resolve_app_target(path)
-                ctypes.windll.shell32.ShellExecuteW(None, "open", "explorer.exe", f'/select,"{target}"', None, 1)
+                shell_open("explorer.exe", parameters=f'/select, "{target}"')
             except Exception as e:
                 logging.debug(f"Failed to open file location: {e}")
-            return ProviderMenuActionResult()
+            return ProviderMenuActionResult(close_popup=True)
 
         if action_id == "copy_path":
             target = self._resolve_app_target(path)
@@ -484,7 +478,7 @@ class AppsProvider(BaseProvider):
 
         if action_id == "uninstall":
             try:
-                os.startfile("ms-settings:appsfeatures")
+                shell_open("ms-settings:appsfeatures")
             except Exception as e:
                 logging.debug("Failed to open uninstall settings: %s", e)
             return ProviderMenuActionResult(close_popup=True)
@@ -496,9 +490,6 @@ class AppsProvider(BaseProvider):
         """Resolve .lnk shortcut to its target executable path."""
         if path.lower().endswith(".lnk") and os.path.isfile(path):
             try:
-                import pythoncom
-                from win32comext.shell import shell
-
                 link = pythoncom.CoCreateInstance(
                     shell.CLSID_ShellLink, None, pythoncom.CLSCTX_INPROC_SERVER, shell.IID_IShellLink
                 )
