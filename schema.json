@@ -2041,6 +2041,28 @@
       "title": "CallbacksConfig",
       "type": "object"
     },
+    "CallbacksCorvusSKKConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "on_left": {
+          "default": "do_nothing",
+          "title": "On Left",
+          "type": "string"
+        },
+        "on_middle": {
+          "default": "do_nothing",
+          "title": "On Middle",
+          "type": "string"
+        },
+        "on_right": {
+          "default": "do_nothing",
+          "title": "On Right",
+          "type": "string"
+        }
+      },
+      "title": "CallbacksCorvusSKKConfig",
+      "type": "object"
+    },
     "CallbacksCpuConfig": {
       "additionalProperties": false,
       "properties": {
@@ -2217,6 +2239,28 @@
       "title": "CallbacksPomodoroConfig",
       "type": "object"
     },
+    "CallbacksSwitchBotConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "on_left": {
+          "default": "toggle_label",
+          "title": "On Left",
+          "type": "string"
+        },
+        "on_middle": {
+          "default": "do_nothing",
+          "title": "On Middle",
+          "type": "string"
+        },
+        "on_right": {
+          "default": "update_status",
+          "title": "On Right",
+          "type": "string"
+        }
+      },
+      "title": "CallbacksSwitchBotConfig",
+      "type": "object"
+    },
     "CallbacksTodoConfig": {
       "additionalProperties": false,
       "properties": {
@@ -2281,6 +2325,28 @@
         }
       },
       "title": "CallbacksWallpapersConfig",
+      "type": "object"
+    },
+    "CallbacksYukigaoConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "on_left": {
+          "default": "update_status",
+          "title": "On Left",
+          "type": "string"
+        },
+        "on_middle": {
+          "default": "do_nothing",
+          "title": "On Middle",
+          "type": "string"
+        },
+        "on_right": {
+          "default": "toggle_label",
+          "title": "On Right",
+          "type": "string"
+        }
+      },
+      "title": "CallbacksYukigaoConfig",
       "type": "object"
     },
     "CategoryConfig": {
@@ -3236,6 +3302,56 @@
       ],
       "title": "Corner",
       "type": "string"
+    },
+    "CorvusSKKConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "default": "SKK: {status}",
+          "title": "Label",
+          "type": "string"
+        },
+        "label_alt": {
+          "default": "{status}",
+          "title": "Label Alt",
+          "type": "string"
+        },
+        "update_interval": {
+          "default": 1000,
+          "maximum": 60000,
+          "minimum": 100,
+          "title": "Update Interval",
+          "type": "integer"
+        },
+        "callbacks": {
+          "$ref": "#/$defs/CallbacksCorvusSKKConfig",
+          "default": {
+            "on_left": "do_nothing",
+            "on_middle": "do_nothing",
+            "on_right": "do_nothing"
+          }
+        }
+      },
+      "title": "CorvusSKKConfig",
+      "type": "object"
+    },
+    "CorvusSKKEntry": {
+      "properties": {
+        "type": {
+          "const": "ryumu.corvus_skk.CorvusSKKWidget",
+          "title": "Type",
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/$defs/CorvusSKKConfig"
+        }
+      },
+      "required": [
+        "type",
+        "options"
+      ],
+      "title": "CorvusSKKEntry",
+      "type": "object"
     },
     "CpuConfig": {
       "additionalProperties": false,
@@ -4441,6 +4557,33 @@
         }
       },
       "title": "GithubMenuConfig",
+      "type": "object"
+    },
+    "GithubNotificationsProviderConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "prefix": {
+          "default": "gh",
+          "title": "Prefix",
+          "type": "string"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "token": {
+          "default": "env",
+          "title": "Token",
+          "type": "string"
+        }
+      },
+      "title": "GithubNotificationsProviderConfig",
       "type": "object"
     },
     "GlazeWMConfig": {
@@ -9740,6 +9883,11 @@
           "title": "Compact Mode",
           "type": "boolean"
         },
+        "compact_text": {
+          "default": false,
+          "title": "Compact Text",
+          "type": "boolean"
+        },
         "providers": {
           "$ref": "#/$defs/QuickLaunchProvidersConfig",
           "default": {
@@ -9769,30 +9917,24 @@
               "prefix": "cb",
               "priority": 0
             },
+            "color": {
+              "enabled": true,
+              "prefix": "c:",
+              "priority": 0
+            },
             "currency": {
               "enabled": false,
               "prefix": "$",
               "priority": 0
             },
-            "web_search": {
+            "dev_tools": {
               "enabled": false,
-              "engine": "google",
-              "prefix": "?",
+              "prefix": "dev",
               "priority": 0
             },
-            "system_commands": {
+            "emoji": {
               "enabled": false,
-              "prefix": ">",
-              "priority": 0
-            },
-            "settings": {
-              "enabled": false,
-              "prefix": "@",
-              "priority": 0
-            },
-            "kill_process": {
-              "enabled": false,
-              "prefix": "!",
+              "prefix": ":",
               "priority": 0
             },
             "file_search": {
@@ -9802,25 +9944,27 @@
               "priority": 0,
               "show_path": true
             },
-            "unit_converter": {
+            "github_notifications": {
               "enabled": false,
-              "prefix": "~",
-              "priority": 0
-            },
-            "emoji": {
-              "enabled": false,
-              "prefix": ":",
-              "priority": 0
-            },
-            "snippets": {
-              "enabled": true,
-              "prefix": ";",
+              "prefix": "gh",
               "priority": 0,
-              "type_delay": 200
+              "token": "env"
             },
-            "color": {
-              "enabled": true,
-              "prefix": "c:",
+            "hacker_news": {
+              "cache_ttl": 300,
+              "enabled": false,
+              "max_items": 30,
+              "prefix": "hn",
+              "priority": 0
+            },
+            "ip_info": {
+              "enabled": false,
+              "prefix": "ip",
+              "priority": 0
+            },
+            "kill_process": {
+              "enabled": false,
+              "prefix": "!",
               "priority": 0
             },
             "port_viewer": {
@@ -9830,26 +9974,25 @@
               "priority": 0,
               "tcp_listening_only": true
             },
-            "world_clock": {
+            "settings": {
               "enabled": false,
-              "prefix": "tz",
+              "prefix": "@",
               "priority": 0
             },
-            "hacker_news": {
-              "cache_ttl": 300,
+            "snippets": {
+              "enabled": true,
+              "prefix": ";",
+              "priority": 0,
+              "type_delay": 200
+            },
+            "system_commands": {
               "enabled": false,
-              "max_items": 30,
-              "prefix": "hn",
+              "prefix": ">",
               "priority": 0
             },
-            "dev_tools": {
+            "unit_converter": {
               "enabled": false,
-              "prefix": "dev",
-              "priority": 0
-            },
-            "ip_info": {
-              "enabled": false,
-              "prefix": "ip",
+              "prefix": "~",
               "priority": 0
             },
             "vscode": {
@@ -9857,10 +10000,32 @@
               "prefix": "vsc",
               "priority": 0
             },
+            "web_search": {
+              "enabled": false,
+              "engine": "google",
+              "prefix": "?",
+              "priority": 0
+            },
             "window_switcher": {
               "enabled": false,
               "prefix": "win",
               "priority": 0
+            },
+            "windows_terminal": {
+              "enabled": false,
+              "prefix": "wt",
+              "priority": 0
+            },
+            "world_clock": {
+              "enabled": false,
+              "prefix": "tz",
+              "priority": 0
+            },
+            "wsl": {
+              "enabled": false,
+              "prefix": "wsl",
+              "priority": 0,
+              "show_online": true
             }
           }
         },
@@ -10040,6 +10205,14 @@
             "max_items": 30
           }
         },
+        "color": {
+          "$ref": "#/$defs/ColorProviderConfig",
+          "default": {
+            "enabled": true,
+            "prefix": "c:",
+            "priority": 0
+          }
+        },
         "currency": {
           "$ref": "#/$defs/CurrencyProviderConfig",
           "default": {
@@ -10048,36 +10221,19 @@
             "priority": 0
           }
         },
-        "web_search": {
-          "$ref": "#/$defs/WebSearchProviderConfig",
+        "dev_tools": {
+          "$ref": "#/$defs/DevToolsProviderConfig",
           "default": {
             "enabled": false,
-            "prefix": "?",
-            "priority": 0,
-            "engine": "google"
-          }
-        },
-        "system_commands": {
-          "$ref": "#/$defs/SystemCommandsProviderConfig",
-          "default": {
-            "enabled": false,
-            "prefix": ">",
+            "prefix": "dev",
             "priority": 0
           }
         },
-        "settings": {
-          "$ref": "#/$defs/SettingsProviderConfig",
+        "emoji": {
+          "$ref": "#/$defs/EmojiProviderConfig",
           "default": {
             "enabled": false,
-            "prefix": "@",
-            "priority": 0
-          }
-        },
-        "kill_process": {
-          "$ref": "#/$defs/KillProcessProviderConfig",
-          "default": {
-            "enabled": false,
-            "prefix": "!",
+            "prefix": ":",
             "priority": 0
           }
         },
@@ -10091,36 +10247,38 @@
             "show_path": true
           }
         },
-        "unit_converter": {
-          "$ref": "#/$defs/UnitConverterProviderConfig",
+        "github_notifications": {
+          "$ref": "#/$defs/GithubNotificationsProviderConfig",
           "default": {
             "enabled": false,
-            "prefix": "~",
-            "priority": 0
-          }
-        },
-        "emoji": {
-          "$ref": "#/$defs/EmojiProviderConfig",
-          "default": {
-            "enabled": false,
-            "prefix": ":",
-            "priority": 0
-          }
-        },
-        "snippets": {
-          "$ref": "#/$defs/SnippetsProviderConfig",
-          "default": {
-            "enabled": true,
-            "prefix": ";",
+            "prefix": "gh",
             "priority": 0,
-            "type_delay": 200
+            "token": "env"
           }
         },
-        "color": {
-          "$ref": "#/$defs/ColorProviderConfig",
+        "hacker_news": {
+          "$ref": "#/$defs/HackerNewsProviderConfig",
           "default": {
-            "enabled": true,
-            "prefix": "c:",
+            "enabled": false,
+            "prefix": "hn",
+            "priority": 0,
+            "cache_ttl": 300,
+            "max_items": 30
+          }
+        },
+        "ip_info": {
+          "$ref": "#/$defs/IpInfoProviderConfig",
+          "default": {
+            "enabled": false,
+            "prefix": "ip",
+            "priority": 0
+          }
+        },
+        "kill_process": {
+          "$ref": "#/$defs/KillProcessProviderConfig",
+          "default": {
+            "enabled": false,
+            "prefix": "!",
             "priority": 0
           }
         },
@@ -10134,37 +10292,36 @@
             "include_established": false
           }
         },
-        "world_clock": {
-          "$ref": "#/$defs/WorldClockProviderConfig",
+        "settings": {
+          "$ref": "#/$defs/SettingsProviderConfig",
           "default": {
             "enabled": false,
-            "prefix": "tz",
+            "prefix": "@",
             "priority": 0
           }
         },
-        "hacker_news": {
-          "$ref": "#/$defs/HackerNewsProviderConfig",
+        "snippets": {
+          "$ref": "#/$defs/SnippetsProviderConfig",
           "default": {
-            "enabled": false,
-            "prefix": "hn",
+            "enabled": true,
+            "prefix": ";",
             "priority": 0,
-            "cache_ttl": 300,
-            "max_items": 30
+            "type_delay": 200
           }
         },
-        "dev_tools": {
-          "$ref": "#/$defs/DevToolsProviderConfig",
+        "system_commands": {
+          "$ref": "#/$defs/SystemCommandsProviderConfig",
           "default": {
             "enabled": false,
-            "prefix": "dev",
+            "prefix": ">",
             "priority": 0
           }
         },
-        "ip_info": {
-          "$ref": "#/$defs/IpInfoProviderConfig",
+        "unit_converter": {
+          "$ref": "#/$defs/UnitConverterProviderConfig",
           "default": {
             "enabled": false,
-            "prefix": "ip",
+            "prefix": "~",
             "priority": 0
           }
         },
@@ -10176,12 +10333,46 @@
             "priority": 0
           }
         },
+        "web_search": {
+          "$ref": "#/$defs/WebSearchProviderConfig",
+          "default": {
+            "enabled": false,
+            "prefix": "?",
+            "priority": 0,
+            "engine": "google"
+          }
+        },
         "window_switcher": {
           "$ref": "#/$defs/WindowSwitcherProviderConfig",
           "default": {
             "enabled": false,
             "prefix": "win",
             "priority": 0
+          }
+        },
+        "windows_terminal": {
+          "$ref": "#/$defs/WindowsTerminalProviderConfig",
+          "default": {
+            "enabled": false,
+            "prefix": "wt",
+            "priority": 0
+          }
+        },
+        "world_clock": {
+          "$ref": "#/$defs/WorldClockProviderConfig",
+          "default": {
+            "enabled": false,
+            "prefix": "tz",
+            "priority": 0
+          }
+        },
+        "wsl": {
+          "$ref": "#/$defs/WslProviderConfig",
+          "default": {
+            "enabled": false,
+            "prefix": "wsl",
+            "priority": 0,
+            "show_online": true
           }
         }
       },
@@ -11067,6 +11258,121 @@
         }
       },
       "title": "StatusThresholdsConfig",
+      "type": "object"
+    },
+    "SwitchBotConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "token": {
+          "title": "Token",
+          "type": "string"
+        },
+        "secret": {
+          "title": "Secret",
+          "type": "string"
+        },
+        "device_id": {
+          "title": "Device Id",
+          "type": "string"
+        },
+        "class_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class Name"
+        },
+        "icon": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon"
+        },
+        "icon_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Icon Path"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "label_alt": {
+          "default": "{temp}\u00b0C / {humidity}% / {ah}g/m\u00b3",
+          "title": "Label Alt",
+          "type": "string"
+        },
+        "update_interval": {
+          "default": 600000,
+          "maximum": 604800000,
+          "minimum": 0,
+          "title": "Update Interval",
+          "type": "integer"
+        },
+        "callbacks": {
+          "$ref": "#/$defs/CallbacksSwitchBotConfig",
+          "default": {
+            "on_left": "toggle_label",
+            "on_middle": "do_nothing",
+            "on_right": "update_status"
+          }
+        },
+        "tooltip_label": {
+          "default": "",
+          "title": "Tooltip Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "token",
+        "secret",
+        "device_id"
+      ],
+      "title": "SwitchBotConfig",
+      "type": "object"
+    },
+    "SwitchBotEntry": {
+      "properties": {
+        "type": {
+          "const": "ryumu.switchbot.SwitchBotWidget",
+          "title": "Type",
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/$defs/SwitchBotConfig"
+        }
+      },
+      "required": [
+        "type",
+        "options"
+      ],
+      "title": "SwitchBotEntry",
       "type": "object"
     },
     "SystemCommandsProviderConfig": {
@@ -13701,6 +14007,28 @@
       "title": "WindowsDesktopsEntry",
       "type": "object"
     },
+    "WindowsTerminalProviderConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "prefix": {
+          "default": "wt",
+          "title": "Prefix",
+          "type": "string"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        }
+      },
+      "title": "WindowsTerminalProviderConfig",
+      "type": "object"
+    },
     "WindowsUpdateConfig": {
       "additionalProperties": false,
       "properties": {
@@ -13795,6 +14123,115 @@
         }
       },
       "title": "WorldClockProviderConfig",
+      "type": "object"
+    },
+    "WslProviderConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "prefix": {
+          "default": "wsl",
+          "title": "Prefix",
+          "type": "string"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "show_online": {
+          "default": true,
+          "title": "Show Online",
+          "type": "boolean"
+        }
+      },
+      "title": "WslProviderConfig",
+      "type": "object"
+    },
+    "YukigaoConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "class_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Class Name"
+        },
+        "label": {
+          "default": "\u2744\ufe0f{ranking}\u4f4d{rawValue}P",
+          "title": "Label",
+          "type": "string"
+        },
+        "label_alt": {
+          "default": "\u2744\ufe0f{ranking}\u4f4d{rawValue}P",
+          "title": "Label Alt",
+          "type": "string"
+        },
+        "update_interval": {
+          "default": 1800000,
+          "maximum": 604800000,
+          "minimum": 0,
+          "title": "Update Interval",
+          "type": "integer"
+        },
+        "api_url": {
+          "default": "https://321-rankings.vercel.app/api/battle-live?battleId=akaaokimidoribattle2026",
+          "title": "Api Url",
+          "type": "string"
+        },
+        "platform": {
+          "default": "pococha",
+          "title": "Platform",
+          "type": "string"
+        },
+        "user_id": {
+          "default": 9634862,
+          "title": "User Id",
+          "type": "integer"
+        },
+        "callbacks": {
+          "$ref": "#/$defs/CallbacksYukigaoConfig",
+          "default": {
+            "on_left": "update_status",
+            "on_middle": "do_nothing",
+            "on_right": "toggle_label"
+          }
+        },
+        "tooltip_label": {
+          "default": "",
+          "title": "Tooltip Label",
+          "type": "string"
+        }
+      },
+      "title": "YukigaoConfig",
+      "type": "object"
+    },
+    "YukigaoEntry": {
+      "properties": {
+        "type": {
+          "const": "ryumu.yukigao.YukigaoWidget",
+          "title": "Type",
+          "type": "string"
+        },
+        "options": {
+          "$ref": "#/$defs/YukigaoConfig"
+        }
+      },
+      "required": [
+        "type",
+        "options"
+      ],
+      "title": "YukigaoEntry",
       "type": "object"
     },
     "core__validation__widgets__glazewm__workspaces__AppIconsConfig": {
@@ -15164,6 +15601,15 @@
           },
           {
             "$ref": "#/$defs/KomorebiWorkspacesEntry"
+          },
+          {
+            "$ref": "#/$defs/CorvusSKKEntry"
+          },
+          {
+            "$ref": "#/$defs/SwitchBotEntry"
+          },
+          {
+            "$ref": "#/$defs/YukigaoEntry"
           },
           {
             "$ref": "#/$defs/ActiveWindowEntry"
