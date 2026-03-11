@@ -106,7 +106,7 @@ class YukigaoWidget(BaseWidget):
 
     def update_status(self):
         try:
-            req = urllib.request.Request(self._api_url, headers={"User-Agent": "yasb/yukigaowidget"})
+            req = urllib.request.Request(self._api_url, headers={"User-Agent": "yasb/mozilla"})
             with urllib.request.urlopen(req, timeout=10) as response:
                 if response.getcode() == 200:
                     data = json.loads(response.read().decode("utf-8"))
@@ -115,12 +115,26 @@ class YukigaoWidget(BaseWidget):
                     groups = data.get("groups", {}) if isinstance(data, dict) else {}
                     
                     group_totals = []
+                    my_group_users = []
                     
                     if isinstance(groups, dict):
                         for group_id, group_list in groups.items():
                             if isinstance(group_list, list):
                                 group_name = "不明"
                                 group_total = 0
+                                
+                                is_my_group = False
+                                for item in group_list:
+                                    if str(item.get("platform", "")) == self._target_platform and str(item.get("userId", "")) == self._target_user_id:
+                                        is_my_group = True
+                                        found = True
+                                        try:
+                                            # Format points with commas
+                                            raw_val = int(item.get("rawValue", 0))
+                                            self._raw_value = f"{raw_val:,}"
+                                        except ValueError:
+                                            self._raw_value = str(item.get("rawValue", "--"))
+                                        break
                                 
                                 for index, item in enumerate(group_list):
                                     if index == 0:
@@ -146,16 +160,17 @@ class YukigaoWidget(BaseWidget):
                                     else:
                                         point_rate = 1.0
                                         
-                                    group_total += round(raw_val * point_rate)
-                                        
-                                    if platform == self._target_platform and str(item.get("userId", "")) == self._target_user_id:
-                                        self._ranking = str(index + 1)
-                                        try:
-                                            # Format points with commas
-                                            self._raw_value = f"{int(item.get('rawValue', 0)):,}"
-                                        except ValueError:
-                                            self._raw_value = str(item.get("rawValue", "--"))
-                                        found = True
+                                    calc_point = round(raw_val * point_rate)
+                                    group_total += calc_point
+                                    
+                                    if is_my_group:
+                                        user_id = str(item.get("userId", ""))
+                                        my_group_users.append({
+                                            "platform": platform,
+                                            "userId": user_id,
+                                            "point": calc_point,
+                                            "rawValue": raw_val
+                                        })
                                 
                                 # In this specific battle, the group key is the team ID. 
                                 # Since we don't have explicit team names in the structure except maybe inferred, 
@@ -176,7 +191,14 @@ class YukigaoWidget(BaseWidget):
                     group_totals.sort(key=lambda x: x[1], reverse=True)
                     self._group_rankings = group_totals
                     
-                    if not found:
+                    if found:
+                        # Sort my group participants to find ranking based on calculated point (and then rawValue)
+                        my_group_users.sort(key=lambda x: (x["point"], x["rawValue"]), reverse=True)
+                        for rank, u in enumerate(my_group_users):
+                            if u["platform"] == self._target_platform and u["userId"] == self._target_user_id:
+                                self._ranking = str(rank + 1)
+                                break
+                    else:
                         self._ranking = "??"
                         self._raw_value = "--"
                 else:
