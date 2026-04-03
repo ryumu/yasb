@@ -15,7 +15,6 @@ from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
 
 from core.utils.tooltip import set_tooltip
-from core.utils.utilities import build_widget_label
 from core.validation.widgets.ryumu.switchbot import SwitchBotConfig
 from core.widgets.base import BaseWidget
 
@@ -49,7 +48,7 @@ class SwitchBotWidget(BaseWidget):
         self.widget_layout.addWidget(self._widget_container)
 
         # Build labels
-        build_widget_label(self, self._label_content, self._label_alt_content)
+        self.build_widget_label(self._label_content, self._label_alt_content)
 
         # Handle image icons
         self._image_label = None
@@ -155,7 +154,9 @@ class SwitchBotWidget(BaseWidget):
         if not pixmap.isNull():
             # Try to get bar height, fallback to 24
             height = self.bar.height() if self.bar else 24
-            scaled_pixmap = pixmap.scaledToHeight(height - 4 if height > 4 else height, Qt.TransformationMode.SmoothTransformation)
+            scaled_pixmap = pixmap.scaledToHeight(
+                height - 4 if height > 4 else height, Qt.TransformationMode.SmoothTransformation
+            )
             label.setPixmap(scaled_pixmap)
         else:
             logging.error(f"Failed to load SwitchBot icon: {icon_path}")
@@ -173,9 +174,9 @@ class SwitchBotWidget(BaseWidget):
 
         label_parts = re.split("(<span.*?>.*?</span>)", active_content)
         label_parts = [part for part in label_parts if part]
-        
+
         widget_index = 0
-        
+
         # Skip image label if it's at the start
         if (self._show_alt and self._image_label_alt) or (not self._show_alt and self._image_label):
             widget_index = 1

@@ -4,7 +4,6 @@ from ctypes import wintypes
 
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
-from core.utils.utilities import build_widget_label
 from core.validation.widgets.ryumu.corvus_skk import CorvusSKKConfig
 from core.widgets.base import BaseWidget
 
@@ -60,7 +59,7 @@ class CorvusSKKWidget(BaseWidget):
         self.widget_layout.addWidget(self._widget_container)
 
         # Build labels
-        build_widget_label(self, self._label_content, self._label_alt_content)
+        self.build_widget_label(self._label_content, self._label_alt_content)
 
         # Register callbacks
         self.register_callback("toggle_label", self.toggle_label)
