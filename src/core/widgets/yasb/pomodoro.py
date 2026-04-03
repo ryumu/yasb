@@ -4,14 +4,12 @@ import re
 
 from PyQt6.QtCore import QPropertyAnimation, QRectF, Qt, QTimer, pyqtProperty
 from PyQt6.QtGui import QColor, QCursor, QPainter, QPen
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from core.utils.utilities import (
     PopupWidget,
     ToastNotifier,
-    add_shadow,
     build_progress_widget,
-    build_widget_label,
     refresh_widget_style,
 )
 from core.utils.widgets.animation_manager import AnimationManager
@@ -24,7 +22,7 @@ class PomodoroWidget(BaseWidget):
     validation_schema = PomodoroConfig
 
     # Shared state for all PomodoroWidget instances
-    _instances: list["PomodoroWidget"] = []
+    _instances: list[PomodoroWidget] = []
     _shared_timer: QTimer | None = None
     _shared_state = {
         "is_running": False,
@@ -50,18 +48,8 @@ class PomodoroWidget(BaseWidget):
         if PomodoroWidget._shared_state["remaining_time"] is None:
             PomodoroWidget._shared_state["remaining_time"] = self.config.work_duration * 60
 
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Initialize container
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
-        self.widget_layout.addWidget(self._widget_container)
-
-        build_widget_label(self, self.config.label, self.config.label_alt, self.config.label_shadow.model_dump())
+        self._init_container(self.config.container_shadow.model_dump())
+        self.build_widget_label(self.config.label, self.config.label_alt, self.config.label_shadow.model_dump())
 
         self.register_callback("toggle_timer", self._toggle_timer)
         self.register_callback("reset_timer", self._reset_timer)
@@ -363,7 +351,7 @@ class PomodoroWidget(BaseWidget):
             sound = os.path.join(SCRIPT_PATH, "assets", "sound", "notification01.wav")
             winsound.PlaySound(sound, winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception as e:
-            logging.error(f"Failed to play notification sound: {e}")
+            logging.error("Failed to play notification sound: %s", e)
 
     def _show_desktop_notification(self):
         try:
@@ -373,7 +361,7 @@ class PomodoroWidget(BaseWidget):
             toaster = ToastNotifier()
             toaster.show(self._icon_path, title, message)
         except Exception as e:
-            logging.warning(f"Failed to show desktop notification: {e}")
+            logging.warning("Failed to show desktop notification: %s", e)
 
     def _toggle_menu(self):
         self.show_menu()

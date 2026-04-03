@@ -11,6 +11,8 @@ if not arch_info:
 
 display_arch, msi_arch_suffix = arch_info
 
+hook_dll_name = "YASBTrayHook_arm64.dll" if display_arch == "ARM64" else "YASBTrayHook.dll"
+
 build_options = {
     "packages": [
         "core.widgets.yasb",
@@ -40,9 +42,8 @@ build_options = {
         ("assets/sound/notification01.wav", "assets/sound/notification01.wav"),
         ("assets/sound/notification02.wav", "assets/sound/notification02.wav"),
         ("core/utils/widgets/quick_launch/providers/resources/Everything64.dll", "lib/Everything64.dll"),
+        (f"core/utils/widgets/systray/hook/{hook_dll_name}", f"lib/{hook_dll_name}"),
         ("core/utils/widgets/quick_launch/providers/resources/emoji.json", "lib/emoji.json"),
-        ("config.yaml", "config.yaml"),
-        ("styles.css", "styles.css"),
     ],
 }
 
@@ -67,6 +68,16 @@ msi_data = {
             f"Software\\Classes\\AppUserModelId\\{APP_ID}",
             "IconUri",
             "[TARGETDIR]assets\\images\\app_icon.png",
+            "TARGETDIR",
+        ),
+        ("UriScheme", -1, "Software\\Classes\\yasb-themes", "", "URL:YASB Themes", "TARGETDIR"),
+        ("UriSchemeFlag", -1, "Software\\Classes\\yasb-themes", "URL Protocol", "", "TARGETDIR"),
+        (
+            "UriSchemeCommand",
+            -1,
+            "Software\\Classes\\yasb-themes\\shell\\open\\command",
+            "",
+            '"[TARGETDIR]yasb_themes.exe" "%1"',
             "TARGETDIR",
         ),
     ],

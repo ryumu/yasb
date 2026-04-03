@@ -68,18 +68,7 @@ class WeatherWidget(BaseWidget):
         self._weather_card_daily_widgets: list[ClickableWidget] = []
 
         # Construct container
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Initialize container
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, config.container_shadow.model_dump())
-
-        # Add the container to the main widget layout
-        self.widget_layout.addWidget(self._widget_container)
+        self._init_container(config.container_shadow.model_dump())
         self._create_dynamically_label(self._label_content, self._label_alt_content)
 
         self.register_callback("toggle_label", self._toggle_label)
@@ -362,7 +351,7 @@ class WeatherWidget(BaseWidget):
 
                 temp_icon_fetcher.finished.connect(update_failed_icons)  # type: ignore
             except Exception as e:
-                logging.debug(f"Failed to update weather card icons: {e}")
+                logging.debug("Failed to update weather card icons: %s", e)
 
     def _set_pixmap(self, label: QLabel, icon_bytes: bytes):
         """Set the pixmap for the day icon label."""
@@ -440,7 +429,7 @@ class WeatherWidget(BaseWidget):
                         precip.append(f"Snow {snow}")
                     tooltip += f"<br><br>Precipitation<br>{' / '.join(precip)}"
             except (ValueError, KeyError) as e:
-                logging.debug(f"Could not parse precipitation for tooltip: {e}")
+                logging.debug("Could not parse precipitation for tooltip: %s", e)
 
             set_tooltip(self, tooltip)
 
@@ -473,7 +462,7 @@ class WeatherWidget(BaseWidget):
                     active_widgets[widget_index].show()
                 widget_index += 1
         except Exception as e:
-            logging.exception(f"Failed to update label: {e}")
+            logging.exception("Failed to update label: %s", e)
 
     def _format_date_string(self, date_str: str):
         date_obj = datetime.strptime(date_str, "%Y-%m-%d")

@@ -30,7 +30,7 @@ from PyQt6.QtWidgets import (
 
 from core.config import HOME_CONFIGURATION_DIR
 from core.utils.tooltip import set_tooltip
-from core.utils.utilities import PopupWidget, add_shadow, build_widget_label, refresh_widget_style
+from core.utils.utilities import PopupWidget, add_shadow, refresh_widget_style
 from core.utils.widgets.animation_manager import AnimationManager
 from core.utils.win32.utilities import apply_qmenu_style
 from core.utils.win32.win32_accent import Blur
@@ -172,10 +172,10 @@ class ClockWidgetSharedState:
         """Load alarms from disk into shared state, if the file exists."""
         try:
             if os.path.exists(self._alarms_file):
-                with open(self._alarms_file, "r", encoding="utf-8") as f:
+                with open(self._alarms_file, encoding="utf-8") as f:
                     self._alarms = json.load(f)
         except Exception as e:
-            logging.error(f"Error loading alarms: {e}")
+            logging.error("Error loading alarms: %s", e)
             self._alarms = []
 
     def save_alarms(self):
@@ -190,7 +190,7 @@ class ClockWidgetSharedState:
             with open(self._alarms_file, "w", encoding="utf-8") as f:
                 f.write(json_str)
         except Exception as e:
-            logging.error(f"Error saving alarms: {e}")
+            logging.error("Error saving alarms: %s", e)
 
 
 class FormattedSpinBox(QSpinBox):
@@ -358,16 +358,8 @@ class ClockWidget(BaseWidget):
         self._timer_visible = False
         self._country_code = self.config.calendar.country_code or self.get_country_code()
         self._subdivision = self.config.calendar.subdivision
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
-        self.widget_layout.addWidget(self._widget_container)
-
-        build_widget_label(self, self._label_content, self._label_alt_content, self.config.label_shadow.model_dump())
+        self._init_container(self.config.container_shadow.model_dump())
+        self.build_widget_label(self._label_content, self._label_alt_content, self.config.label_shadow.model_dump())
 
         self._timer_label = QLabel()
         self._timer_label.setProperty("class", "label timer")
@@ -416,7 +408,8 @@ class ClockWidget(BaseWidget):
                 valid_timezones.append(tz)
             else:
                 logging.warning(
-                    f"Invalid timezone '{tz}' ignored. Use format like 'America/New_York' or 'Europe/London'"
+                    "Invalid timezone '%s' ignored. Use format like 'America/New_York' or 'Europe/London'",
+                    tz,
                 )
 
         if not valid_timezones:
@@ -609,7 +602,7 @@ class ClockWidget(BaseWidget):
 
                 set_tooltip(self, tooltip_text)
             except Exception as e:
-                logging.error(f"Error updating tooltip for timezone '{self._active_tz}': {e}")
+                logging.error("Error updating tooltip for timezone '%s': %s", self._active_tz, e)
 
     def _next_timezone(self):
         """Rotate to the next timezone in the configured list."""
@@ -622,7 +615,7 @@ class ClockWidget(BaseWidget):
             if self._tooltip and hasattr(self, "_tooltip_filter"):
                 self._tooltip_filter.show_tooltip()
         except Exception as e:
-            logging.error(f"Error switching to timezone '{self._active_tz}': {e}")
+            logging.error("Error switching to timezone '%s': %s", self._active_tz, e)
             self._active_tz = None
             self._update_tooltip()
             self._update_label()
@@ -1312,7 +1305,7 @@ class ClockWidget(BaseWidget):
     def _play_sound(self, loop_duration_ms=0):
         """Play the configured notification sound; loop if loop_duration_ms>0."""
         if not os.path.exists(NOTIFICATION_SOUND):
-            logging.warning(f"Notification sound file not found: {NOTIFICATION_SOUND}")
+            logging.warning("Notification sound file not found: %s", NOTIFICATION_SOUND)
             return
 
         try:
@@ -1322,7 +1315,7 @@ class ClockWidget(BaseWidget):
             else:
                 winsound.PlaySound(NOTIFICATION_SOUND, winsound.SND_FILENAME | winsound.SND_ASYNC)
         except Exception as e:
-            logging.error(f"Failed to play notification sound: {e}")
+            logging.error("Failed to play notification sound: %s", e)
 
     def _stop_alarm_sound(self):
         """Stop any playing notification sound (winsound)."""

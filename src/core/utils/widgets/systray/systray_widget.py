@@ -20,6 +20,7 @@ from PyQt6.QtGui import (
     QDropEvent,
     QIcon,
     QMouseEvent,
+    QPixmap,
 )
 from PyQt6.QtWidgets import (
     QFrame,
@@ -91,7 +92,8 @@ class IconWidget(QPushButton):
     def update_scaled_pixmap(self):
         """Pre-compute the scaled pixmap."""
         if self.data is not None and self.data.icon_image is not None:
-            self.scaled_pixmap = self.data.icon_image.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio)
+            pixmap = QPixmap.fromImage(self.data.icon_image)
+            self.scaled_pixmap = pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio)
         else:
             self.scaled_pixmap = None
 
@@ -223,7 +225,7 @@ class IconWidget(QPushButton):
             set_tooltip(self, self.data.szTip or self.data.exe, delay=50)
         icon = self.data.icon_image
         if icon:
-            self.setIcon(QIcon(icon))
+            self.setIcon(QIcon(QPixmap.fromImage(icon)))
 
 
 class DropWidget(QFrame):
@@ -384,14 +386,17 @@ class DropWidget(QFrame):
         return self.main_layout.count()
 
     def add_icon_to_grid(self, icon: IconWidget):
-        count = len(self._get_all_icons())
-        cols = self._grid_cols
-        self.main_layout.addWidget(icon, count // cols, count % cols)
+        icons = self._get_all_icons()
+        if icon not in icons:
+            icons.append(icon)
+        self.relayout_grid(icons)
 
     def relayout_grid(self, icons: list[IconWidget] | None = None):
         if icons is None:
             icons = self._get_all_icons()
         layout = self.main_layout
+        if not isinstance(layout, QGridLayout):
+            return
         for icon in icons:
             layout.removeWidget(icon)
         for r in range(layout.rowCount()):
@@ -403,9 +408,14 @@ class DropWidget(QFrame):
         cols = self._grid_cols
         visible_idx = 0
         for icon in icons:
+            # Keep hidden icons in the layout to prevent them from being orphaned
             if icon.isHidden():
+                # Placing them at the current visible index cell does not mess up the visible order
+                layout.addWidget(icon, visible_idx // cols, visible_idx % cols)
+                layout.setAlignment(icon, Qt.AlignmentFlag.AlignCenter)
                 continue
             layout.addWidget(icon, visible_idx // cols, visible_idx % cols)
+            layout.setAlignment(icon, Qt.AlignmentFlag.AlignCenter)
             icon.show()
             visible_idx += 1
         layout.invalidate()

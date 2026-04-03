@@ -8,11 +8,11 @@ import logging
 import os
 import queue
 import shutil
-import sys
 import tempfile
 import threading
+from collections.abc import Iterable
 from dataclasses import asdict, is_dataclass
-from typing import Any, Iterable
+from typing import Any
 
 from core.utils.widgets.ai_chat.constants import (
     BYTES_PER_KB,
@@ -23,10 +23,17 @@ from core.utils.widgets.ai_chat.constants import (
     FORMAT_TO_MIME,
     MESSAGE_QUEUE_TIMEOUT_SECONDS,
 )
-from settings import DEBUG
+from settings import IS_FROZEN
 
 try:
-    from copilot import CopilotClient
+    from copilot import (
+        CopilotClient,
+        ExternalServerConfig,
+        FileAttachment,
+        PermissionRequestResult,
+        SubprocessConfig,
+        SystemMessageAppendConfig,
+    )
 except ImportError:
     CopilotClient = None
 
@@ -37,18 +44,18 @@ def _resolve_copilot_cli_path() -> str | None:
     return shutil.which("copilot") or shutil.which("copilot.exe")
 
 
-def _build_copilot_client_options(provider_config: dict | None) -> dict[str, Any]:
+def _build_copilot_client_config(provider_config: dict | None) -> ExternalServerConfig | SubprocessConfig | None:
     if not provider_config:
         provider_config = {}
     cli_url = provider_config.get("copilot_cli_url")
     if isinstance(cli_url, str) and cli_url.strip():
-        return {"cli_url": cli_url.strip()}
+        return ExternalServerConfig(url=cli_url.strip())
     # In a frozen exe the SDK cannot locate its bundled binary resolve from system PATH.
-    if getattr(sys, "frozen", False):
+    if IS_FROZEN:
         cli_path = _resolve_copilot_cli_path()
         if cli_path:
-            return {"cli_path": cli_path}
-    return {}
+            return SubprocessConfig(cli_path=cli_path)
+    return None
 
 
 def _run_async(coro_factory):
@@ -144,7 +151,7 @@ def list_copilot_models(provider_config: dict | None = None) -> list[dict[str, A
         return []
 
     async def _list() -> list[dict[str, Any]]:
-        client = CopilotClient(_build_copilot_client_options(provider_config))
+        client = CopilotClient(_build_copilot_client_config(provider_config))
         await client.start()
         auth_status = await client.get_auth_status()
         if not getattr(auth_status, "isAuthenticated", False):
@@ -173,14 +180,13 @@ def list_copilot_models(provider_config: dict | None = None) -> list[dict[str, A
         models = _run_async(_list)
         if not models:
             return []
-        if DEBUG:
-            logging.debug(
-                "Available Copilot models: %s",
-                [item.get("name") for item in models],
-            )
+        logging.debug(
+            "Available Copilot models: %s",
+            [item.get("name") for item in models],
+        )
         return _sort_models_free_first(models)
     except Exception as exc:
-        logging.exception(f"Failed to list Copilot models: {exc}")
+        logging.exception("Failed to list Copilot models: %s", exc)
         return []
 
 
@@ -228,23 +234,20 @@ class CopilotAiChatClient:
         try:
             self._run_coroutine(self._abort_session())
         except Exception as e:
-            if DEBUG:
-                logging.debug(f"Error aborting Copilot session: {e}")
+            logging.debug("Error aborting Copilot session: %s", e)
 
     def close(self):
         """Stop the client and release all resources (kills copilot.exe)."""
         try:
             self._run_coroutine(self._stop_client())
         except Exception as e:
-            if DEBUG:
-                logging.debug(f"Error destroying Copilot session: {e}")
+            logging.debug("Error destroying Copilot session: %s", e)
         if self._loop and self._loop_thread:
             try:
                 self._loop.call_soon_threadsafe(self._loop.stop)
                 self._loop_thread.join(timeout=2)
             except Exception as e:
-                if DEBUG:
-                    logging.debug(f"Error stopping Copilot event loop: {e}")
+                logging.debug("Error stopping Copilot event loop: %s", e)
 
     def chat(
         self,
@@ -340,7 +343,7 @@ class CopilotAiChatClient:
         self,
         prompt: str,
         system_message: str | None,
-        attachments: list[dict[str, str]],
+        attachments: list[dict],
         message_queue: queue.Queue[str | None],
         done_event: threading.Event,
     ) -> None:
@@ -357,17 +360,17 @@ class CopilotAiChatClient:
         self._saw_delta = False
         self._had_output = False
 
-        payload: dict[str, Any] = {"prompt": prompt}
+        send_kwargs: dict[str, Any] = {}
         if attachments:
-            payload["attachments"] = attachments
+            send_kwargs["attachments"] = attachments
 
         try:
-            await self._session.send(payload)
+            await self._session.send(prompt, **send_kwargs)
             # Wait with timeout to prevent hanging forever
             try:
                 await asyncio.wait_for(self._active_idle.wait(), timeout=DEFAULT_TIMEOUT_SECONDS)
-            except asyncio.TimeoutError:
-                logging.warning(f"Copilot request timed out after {DEFAULT_TIMEOUT_SECONDS} seconds")
+            except TimeoutError:
+                logging.warning("Copilot request timed out after %s seconds", DEFAULT_TIMEOUT_SECONDS)
                 await self._abort_session()
                 raise TimeoutError("Request timed out")
             if not self._had_output:
@@ -380,31 +383,29 @@ class CopilotAiChatClient:
             message_queue.put(None)
             done_event.set()
 
-    def _build_image_attachments(self, messages: list[dict[str, Any]]) -> list[dict[str, str]]:
-        attachments: list[dict[str, str]] = []
+    def _build_image_attachments(self, messages: list[dict[str, Any]]) -> list[dict]:
+        attachments: list[dict] = []
         last_user = next((msg for msg in reversed(messages) if msg.get("role") == "user"), None)
 
         for att in (last_user.get("attachments") or []) if last_user else []:
             if not att.get("is_image"):
                 continue
 
-            # If image was compressed use the processed base64 version
-            # Otherwise use original file path if it exists
+            # If image was not compressed use original file path if it exists
             if not att.get("compressed"):
                 path = att.get("path")
                 if path and os.path.exists(path):
-                    attachments.append({"type": "file", "path": path})
+                    attachments.append(FileAttachment(type="file", path=path))
                     continue
 
             # Use temp file from base64 (for compressed images or clipboard pastes)
             image_url = att.get("image_url")
             temp_path = self._data_url_to_temp_file(image_url) if image_url else None
             if temp_path:
-                attachments.append({"type": "file", "path": temp_path})
+                attachments.append(FileAttachment(type="file", path=temp_path))
                 continue
 
-            if DEBUG:
-                logging.debug(f"Copilot skipped image attachment (no file): {att.get('name')}")
+            logging.debug("Copilot skipped image attachment (no file): %s", att.get("name"))
 
         return attachments
 
@@ -455,7 +456,7 @@ class CopilotAiChatClient:
 
         # Reuse existing client (single copilot.exe) or start a new one
         if not self._client:
-            client = CopilotClient(_build_copilot_client_options(self.provider_config))
+            client = CopilotClient(_build_copilot_client_config(self.provider_config))
             try:
                 await client.start()
                 auth_status = await client.get_auth_status()
@@ -469,26 +470,26 @@ class CopilotAiChatClient:
                 logging.error("Copilot CLI not found. Please install GitHub Copilot CLI.")
                 raise RuntimeError("Copilot CLI not found")
             except ConnectionError as e:
-                logging.error(f"Could not connect to Copilot CLI server: {e}")
+                logging.error("Could not connect to Copilot CLI server: %s", e)
                 raise RuntimeError("Could not connect to Copilot CLI server")
             except Exception as e:
-                logging.error(f"Failed to start Copilot client: {e}")
+                logging.error("Failed to start Copilot client: %s", e)
                 raise RuntimeError("Failed to start Copilot client")
             self._client = client
 
-        session_args: dict[str, Any] = {
+        session_kwargs: dict[str, Any] = {
             "model": self._model,
             "streaming": True,
             "on_permission_request": self._handle_permission_request,
             "available_tools": list(DEFAULT_ALLOWED_TOOLS),
         }
         if system_message:
-            session_args["system_message"] = {"mode": "append", "content": system_message}
+            session_kwargs["system_message"] = SystemMessageAppendConfig(content=system_message)
 
         try:
-            self._session = await self._client.create_session(session_args)
+            self._session = await self._client.create_session(**session_kwargs)
         except Exception as e:
-            logging.error(f"Failed to create Copilot session: {e}")
+            logging.error("Failed to create Copilot session: %s", e)
             self._session = None
             raise
 
@@ -531,15 +532,16 @@ class CopilotAiChatClient:
             if asyncio.iscoroutine(result):
                 await result
 
-    def _handle_permission_request(self, request: dict, _invocation: dict) -> dict:
+    def _handle_permission_request(self, request, _invocation: dict) -> PermissionRequestResult:
         try:
-            kind = request.get("kind")
-            if kind in DEFAULT_ALLOWED_PERMISSION_KINDS:
-                return {"kind": "approved"}
+            kind = request.kind if hasattr(request, "kind") else request.get("kind")
+            kind_value = kind.value if hasattr(kind, "value") else kind
+            if kind_value in DEFAULT_ALLOWED_PERMISSION_KINDS:
+                return PermissionRequestResult(kind="approved")
         except Exception:
             pass
 
-        return {"kind": "denied-by-rules"}
+        return PermissionRequestResult(kind="denied-by-rules")
 
     def _handle_event(self, event: Any) -> None:
         event_type = None

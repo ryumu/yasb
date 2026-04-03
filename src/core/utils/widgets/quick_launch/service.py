@@ -9,6 +9,7 @@ from core.utils.widgets.quick_launch.base_provider import BaseProvider
 from core.utils.widgets.quick_launch.icon_resolver import IconResolverWorker, compute_extraction_size
 from core.utils.widgets.quick_launch.providers import (
     AppsProvider,
+    BinanceProvider,
     BookmarksProvider,
     CalculatorProvider,
     ClipboardHistoryProvider,
@@ -43,6 +44,7 @@ PROVIDER_REGISTRY: dict[str, type[BaseProvider]] = {
     "calculator": CalculatorProvider,
     "clipboard_history": ClipboardHistoryProvider,
     "color": ColorProvider,
+    "binance": BinanceProvider,
     "currency": CurrencyProvider,
     "dev_tools": DevToolsProvider,
     "emoji": EmojiProvider,
@@ -73,10 +75,10 @@ class QuickLaunchService(QObject):
     icon_ready = pyqtSignal(str, str)
     query_finished = pyqtSignal(str, list)
 
-    _instance: "QuickLaunchService | None" = None
+    _instance: QuickLaunchService | None = None
 
     @classmethod
-    def instance(cls) -> "QuickLaunchService":
+    def instance(cls) -> QuickLaunchService:
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance

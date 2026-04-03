@@ -1,3 +1,5 @@
+def get_default_config() -> str:
+    return """\
 # yaml-language-server: $schema=https://raw.githubusercontent.com/amnweb/yasb/main/schema.json
 
 # This is default and very simple configuration file for Yasb. 
@@ -49,7 +51,7 @@ bars:
       - "clock"
       right:
       - "media"
-      - "weather"
+      - "open_meteo"
       - "microphone"
       - "volume"
       - "notifications"
@@ -58,12 +60,12 @@ widgets:
   home:
     type: "yasb.home.HomeWidget"
     options:
-      label: "<span>\udb81\udf17</span>"
+      label: "<span>\\udb81\\udf17</span>"
       menu_list:
       - { title: "User Home", path: "~" }
-      - { title: "Download", path: "~\\Downloads" }
-      - { title: "Documents", path: "~\\Documents" }
-      - { title: "Pictures", path: "~\\Pictures" }
+      - { title: "Download", path: "~\\\\Downloads" }
+      - { title: "Documents", path: "~\\\\Documents" }
+      - { title: "Pictures", path: "~\\\\Pictures" }
       system_menu: true
       power_menu: true
       blur: false
@@ -85,10 +87,10 @@ widgets:
       thumbnail_corner_radius: 0
       thumbnail_edge_fade: true
       icons:
-        prev_track: "\udb81\udcae"
-        next_track: "\udb81\udcad"
-        play: "\udb81\udc0a"
-        pause: "\udb80\udfe4"
+        prev_track: "\\udb81\\udcae"
+        next_track: "\\udb81\\udcad"
+        play: "\\udb81\\udc0a"
+        pause: "\\udb80\\udfe4"
       media_menu:
         blur: false
         round_corners: false
@@ -108,8 +110,8 @@ widgets:
         offset: [ 1, 1 ]
       scrolling_label:
         enabled: true
-        update_interval_ms: 50
-        style: "left"  # can be "left", "right", "bounce", "bounce-ease"
+        update_interval_ms: 40
+        style: "bounce"  # can be "left", "right", "bounce", "bounce-ease"
         separator: " | "
         label_padding: 1
       callbacks:
@@ -144,10 +146,10 @@ widgets:
   komorebi_workspaces:
     type: "komorebi.workspaces.WorkspaceWidget"
     options:
-      label_offline: "\u23fc Offline"
-      label_workspace_btn: "\u000d"
-      label_workspace_active_btn: "\u000d"
-      label_workspace_populated_btn: "\u000d"
+      label_offline: "\\u23fc Offline"
+      label_workspace_btn: "\\u000d"
+      label_workspace_active_btn: "\\u000d"
+      label_workspace_populated_btn: "\\u000d"
       label_default_name: "{index}"
       label_zero_index: false
       hide_empty_workspaces: false
@@ -186,50 +188,46 @@ widgets:
         on_left: "next_layout"
         on_middle: "toggle_monocle"
         on_right: "prev_layout"
-  weather:
-    type: "yasb.weather.WeatherWidget"
+  open_meteo:
+    type: "yasb.open_meteo.OpenMeteoWidget"
     options:
       label: "<span>{icon}</span> {temp}"
       label_alt: "{location}: Min {min_temp}, Max {max_temp}, Humidity {humidity}"
-      api_key: env
+      tooltip: true
       update_interval: 600
       hide_decimal: true
-      location: env
+      units: "metric"
       callbacks:
         on_left: "toggle_card"
         on_middle: "do_nothing"
         on_right: "toggle_label"
-      icons:
-        sunnyDay: "\ue30d"
-        clearNight: "\ue32b"
-        cloudyDay: "\ue312"
-        cloudyNight: "\ue311"
-        rainyDay: "\ue308"
-        rainyNight: "\ue333"
-        snowyDay: "\ue30a"
-        snowyNight: "\ue335"
-        blizzardDay: "\udb83\udf36"
-        blizzardNight: "\udb83\udf36"
-        foggyDay: "\ue303"
-        foggyNight: "\ue346"
-        thunderstormDay: "\ue30f"
-        thunderstormNight: "\ue338"
-        default: "\uebaa"
       weather_card:
         blur: false
-        round_corners: false
         alignment: "right"
         direction: "down"
-        icon_size: 64
+        icon_size: 32
         show_hourly_forecast: true
         time_format: "24h"
         hourly_point_spacing: 76
-        hourly_icon_size: 32
+        hourly_icon_size: 16
         icon_smoothing: true
         temp_line_width: 2
         current_line_color: "#8EAEE8"
         current_line_width: 1
         current_line_style: "dot"
+        hourly_forecast_buttons:
+          enabled: true
+          default_view: "temperature"
+          temperature_icon: "\\udb81\\udd99"
+          rain_icon: "\\udb81\\udd96"
+          snow_icon: "\\udb81\\udd98"
+        weather_animation:
+          enabled: true
+          snow_overrides_rain: true
+          temp_line_animation_style: both
+          rain_effect_intensity: 1.0
+          snow_effect_intensity: 1.0
+          scale_with_chance: true
   volume:
     type: "yasb.volume.VolumeWidget"
     options:
@@ -237,11 +235,11 @@ widgets:
       label_alt: "{volume}"
       tooltip: false
       volume_icons:
-        - "\ueee8"
-        - "\uf026"
-        - "\uf027"
-        - "\uf027"
-        - "\uf028"
+        - "\\ueee8"
+        - "\\uf026"
+        - "\\uf027"
+        - "\\uf027"
+        - "\\uf028"
       callbacks:
         on_left: "toggle_mute"
         on_right: "exec cmd.exe /c start ms-settings:sound"
@@ -251,8 +249,8 @@ widgets:
       label: "<span>{icon}</span> {level}"
       label_alt: "<span>{icon}</span> {level}%"
       icons:
-        normal: "\udb80\udf6c"
-        muted: "\udb80\udf6d"
+        normal: "\\udb80\\udf6c"
+        muted: "\\udb80\\udf6d"
       callbacks:
         on_left: "toggle_mute"
         on_middle: "toggle_label"
@@ -260,7 +258,7 @@ widgets:
   power_menu:
     type: "yasb.power_menu.PowerMenuWidget"
     options:
-      label: "\uf011"
+      label: "\\uf011"
       uptime: true
       show_user: true
       blur: false
@@ -268,16 +266,16 @@ widgets:
       animation_duration: 120 # Milliseconds
       button_row: 3 # Number of buttons in a row, min 1 max 6
       buttons:
-        restart: ["\uead2", "Restart"]
-        shutdown: ["\uf011", "Shut Down"]
-        signout: ["\udb80\udf43", "Sign out"]
-        hibernate: ["\uf28e", "Hibernate"]
-        lock: ["\uea75", "Lock"]
-        cancel: ["\udb81\udf3a", "Cancel"]
+        restart: ["\\uead2", "Restart"]
+        shutdown: ["\\uf011", "Shut Down"]
+        signout: ["\\udb80\\udf43", "Sign out"]
+        hibernate: ["\\uf28e", "Hibernate"]
+        lock: ["\\uea75", "Lock"]
+        cancel: ["\\udb81\\udf3a", "Cancel"]
   notifications:
     type: "yasb.notifications.NotificationsWidget"
     options:
-      label: "<span>\uf476</span> {count}"
+      label: "<span>\\uf476</span> {count}"
       label_alt: "{count} notifications"
       hide_empty: true
       tooltip: false
@@ -285,3 +283,4 @@ widgets:
         on_left: "toggle_notification"
         on_right: "do_nothing"
         on_middle: "toggle_label"
+"""

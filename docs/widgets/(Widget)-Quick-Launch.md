@@ -8,6 +8,7 @@ The Quick Launch widget provides a Spotlight style search launcher accessible fr
 | -------------------- | ------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `label`              | string | `"\uf002"`                                                                          | The label/icon for the widget on the bar.                                                                               |
 | `search_placeholder` | string | `"Search applications..."`                                                          | Placeholder text for the search field.                                                                                  |
+| `remember_last_query`| bool   | `false`                                                                             | When enabled, the popup remembers the last search query and displays its results when the widget is opened.             |
 | `max_results`        | int    | `50`                                                                                | Maximum number of results displayed (1–500).                                                                            |
 | `show_icons`         | bool   | `true`                                                                              | Show icons next to search results.                                                                                      |
 | `icon_size`          | int    | `32`                                                                                | Size of result icons in pixels.                                                                                         |
@@ -33,7 +34,6 @@ The Quick Launch widget provides a Spotlight style search launcher accessible fr
 | `round_corners_type` | string | `"normal"` | Corner rounding type (`"normal"` or `"small"`).                           |
 | `border_color`       | string | `"System"` | Border color of the popup (`"System"`, HEX value, or `"None"`).           |
 | `dark_mode`          | bool   | `true`     | Force dark mode colors for the popup (Windows 11).                        |
-| `screen`             | string | `"focus"`  | Which screen to show the popup on: `"focus"`, `"cursor"`, or `"primary"`. |
 
 #### Screen Modes
 
@@ -53,6 +53,7 @@ Quick Launch uses a plugin-based provider system. Each provider handles a specif
 **Provider Index**
 
 - [Apps](#apps-provider)
+- [Binance](#binance-provider)
 - [Bookmarks](#bookmarks-provider)
 - [Calculator](#calculator-provider)
 - [Clipboard History](#clipboard-history-provider)
@@ -90,6 +91,30 @@ Searches installed applications (Start Menu shortcuts). This is the default prov
 | `show_recent`      | bool   | `true`  | Show recently launched apps at the top.                                              |
 | `max_recent`       | int    | `10`    | Maximum number of recent apps to display.                                            |
 | `show_description` | bool   | `false` | Show a short description of the application.                                         |
+
+### Binance Provider
+
+Fetches live cryptocurrency prices from Binance and supports quick conversions between trading pairs.
+
+| Option     | Type   | Default               | Description                                                               |
+| ---------- | ------ | --------------------- | ------------------------------------------------------------------------- |
+| `enabled`  | bool   | `true`                | Enable/disable the Binance provider.                                      |
+| `prefix`   | string | `crypto`              | Trigger prefix. Use `"*"` to include in default results.                  |
+| `priority` | int    | `0`                   | Sort order when multiple providers share the same prefix. Lower values appear first. |
+| `pairs`    | list   | `["BTC/USDT"]`        | Default trading pairs to query when no specific pair is provided.(e.g. `["BTC/USDT", "ETH/USDT"]`)         |
+| `round`    | int    | `2`                   | Decimal precision for formatted output.                                   |
+| `open_url` | bool   | `false`               | Open the Binance trading page instead of only copying the result.         |
+| `domain`   | string | `api-gcp.binance.com` | Binance API domain.             |
+
+### Supported Queries
+
+- `btc` - Uses configured pairs
+- `eth usdt` or `eth/usdt` - Direct pair lookup
+- `5 btc usdt` or `5 btc to usdt` - Quantity conversion
+- `52.4k sol/eth` - Supports suffixes (`k`, `m`, `b`, `t`)
+
+> [!NOTE]
+> Endpoints using `*.binance.com` are not accessible from the United States. If you're operating within the U.S., use the corresponding `*.binance.us` endpoints instead.
 
 ### Bookmarks Provider
 
@@ -187,7 +212,7 @@ Click a result to copy the converted value to the clipboard.
 
 ### Developer Tools Provider
 
-A collection of common developer utilities accessible from Quick Launch. All operations are local — no network requests, no API keys, instant results.
+A collection of common developer utilities accessible from Quick Launch. All operations are local - no network requests, no API keys, instant results.
 
 | Option     | Type   | Default | Description                                  |
 | ---------- | ------ | ------- | -------------------------------------------- |
@@ -278,15 +303,16 @@ Browse GitHub notifications directly from Quick Launch. Type `gh` to see your no
 - Type `gh review` to filter notifications by title, repo, type, or reason.
 - Click a notification to open it in the browser and mark as read.
 - Right-click a notification for:
-  - **Copy URL** — copy the notification URL to clipboard.
-  - **Mark as read** — mark a single notification as read.
-  - **Mark all as read** — mark every notification as read.
+  - **Copy URL** - copy the notification URL to clipboard.
+  - **Mark as read** - mark a single notification as read.
+  - **Mark all as read** - mark every notification as read.
 
 > [!NOTE]
 > The provider fetches fresh notifications every time the popup opens (no stale cache). If the same GitHub token is used for both the bar widget and this provider, the bar widget automatically refreshes when the provider fetches new data or marks notifications as read.
 
-> [!NOTE]
-> You need a GitHub Personal Access Token (classic) with the `notifications` scope. Generate one at https://github.com/settings/tokens. You can set the token via the `YASB_GITHUB_TOKEN` environment variable (recommended) or directly in the config.
+**Authentication:**
+
+You can set a [Personal Access Token (classic)](https://github.com/settings/tokens) with the `notifications` scope in the `token` option, use `"env"` to read from the `YASB_GITHUB_TOKEN` environment variable, or leave it empty. When no token is configured, clicking the `gh` prefix result will open a sign-in dialog where you authorize with GitHub through your browser. The OAuth token is stored in `%LOCALAPPDATA%\YASB\github_token`.
 
 ### Hacker News Provider
 
@@ -317,11 +343,11 @@ Clicking a story opens it in your default browser. Right-click a story to open t
 
 **Usage examples:**
 
-- `hn` — Show all topic tiles
-- `hn frontpage` — Load front page stories
-- `hn newest rust` — Search newest stories for "rust"
-- `hn python` — Search all of HN for "python"
-- `hn ask` — Browse Ask HN posts
+- `hn` - Show all topic tiles
+- `hn frontpage` - Load front page stories
+- `hn newest rust` - Search newest stories for "rust"
+- `hn python` - Search all of HN for "python"
+- `hn ask` - Browse Ask HN posts
 
 Each story result displays:
 
@@ -330,8 +356,8 @@ Each story result displays:
 
 **Context menu actions:**
 
-- **Open HN comments** — Opens the Hacker News discussion page
-- **Copy URL** — Copies the story URL to clipboard
+- **Open HN comments** - Opens the Hacker News discussion page
+- **Copy URL** - Copies the story URL to clipboard
 
 > [!NOTE]
 > Hacker News provider uses [hnrss.org](https://hnrss.org) RSS feeds. Results are cached in memory and on disk to minimize network requests. No API key is required.
@@ -461,7 +487,7 @@ Browse and launch SSH connections from your `~/.ssh/config` file. Type `ssh` to 
 - Select **Edit connection** to open an inline form in the preview panel where you can change the host alias, hostname/IP, user, port, and identity file. The changes are written back to your SSH config file immediately on save.
 
 > [!NOTE]
-> Hosts with a wildcard name (e.g. `Host *`) are automatically skipped. The provider re-reads the config file each time the popup is opened, so newly added hosts are picked up immediately. Editing a host rewrites only that `Host` block — all other entries, comments, and blank lines are preserved.
+> Hosts with a wildcard name (e.g. `Host *`) are automatically skipped. The provider re-reads the config file each time the popup is opened, so newly added hosts are picked up immediately. Editing a host rewrites only that `Host` block - all other entries, comments, and blank lines are preserved.
 
 ### System Commands Provider
 
@@ -526,8 +552,10 @@ Opens a web search in the default browser. Type `?` followed by a search query (
 | `prefix`   | string | `"?"`      | Trigger prefix. Use `"*"` to include in default results.                             |
 | `priority` | int    | `0`        | Sort order when multiple providers share the same prefix. Lower values appear first. |
 | `engine`   | string | `"google"` | Preferred (first) search engine. All other engines are shown below it.               |
+| `custom_engines` | list[{engine: string, name: string, url: string, description: string, icon: string}] | [] | List of custom search engines that are not included in the defaults. The icon property should be a stringified SVG. A default icon will be provided if not set in your configuration. |
+| `remove_engines` | list[str]  | []  | Default engines you want to remove from the list of results |
 
-Available engines:
+Default engines:
 
 | Engine            | Description                         |
 | ----------------- | ----------------------------------- |
@@ -539,6 +567,25 @@ Available engines:
 | `"youtube"`       | YouTube video search                |
 | `"reddit"`        | Reddit posts and communities search |
 | `"stackoverflow"` | Stack Overflow programming Q&A      |
+| `"x"`             | Search X (formerly Twitter) post    |
+
+You can add your own engines through the `custom_engines`, and remove default engines you don't want, like this:
+```yaml
+      web_search:
+        enabled: true
+        prefix: "?"
+        priority: 19
+        engine: "brave"
+        custom_engines:
+          - engine: "brave"
+            name: "Brave"
+            url: "https://search.brave.com/search?q={}"
+            description: "Private Web Search"
+            icon: '<svg viewBox="0 0 300 345" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid"><defs><linearGradient x1="0%" y1="50.017894%" x2="100.096998%" y2="50.017894%" id="linearGradient-1"><stop stop-color="#fff" offset="0%"/><stop stop-color="#fff" stop-opacity="0.9576" offset="14.13%"/><stop stop-color="#fff" stop-opacity="0.7" offset="100%"/></linearGradient><linearGradient x1="-0.0390588235%" y1="49.9824538%" x2="100%" y2="49.9824538%" id="linearGradient-2"><stop stop-color="#F1F1F2" offset="0%"/><stop stop-color="#E4E5E6" offset="9.191442%"/><stop stop-color="#D9DADB" offset="23.57%"/><stop stop-color="#D2D4D5" offset="43.8%"/><stop stop-color="#D0D2D3" offset="100%"/></linearGradient></defs><rect width="300" height="345" rx="70" ry="70" fill="#F15A22"/><g transform="translate(22,22)"><path d="M256 97.1 246.7 72l6.4-14.4c.8-1.9.4-4-1-5.5l-17.5-17.7c-7.7-7.7-19.1-10.4-29.4-6.8l-4.9 1.7L173.5.3 128.2 0h-.3L82.3.4 55.6 29.6l-4.8-1.7c-10.4-3.7-21.9-.9-29.6 7L3.4 52.8c-1.2 1.2-1.5 2.9-.9 4.4l6.7 15-9.2 25.1 6 22.7 27.2 103.3c3.1 11.9 10.3 22.3 20.4 29.5 0 0 33 23.3 65.5 44.4 2.9 1.9 5.9 3.2 9.1 3.2s6.2-1.3 9.1-3.2c36.6-24 65.5-44.5 65.5-44.5 10-7.2 17.2-17.6 20.3-29.5l27-103.3 5.9-22.8z" fill="#F15A22" stroke="#fff" stroke-width="8" stroke-linejoin="round"/><path d="M134 184.801c-1.2-.5-2.5-.9-2.9-.9h-1.6-1.6c-.4 0-1.7.4-2.9.9l-13 5.4c-1.2.5-3.2 1.4-4.4 2l-19.6 10.2c-1.2.6-1.3 1.7-.2 2.5l17.3 12.2c1.1.8 2.8 2.1 3.8 3l7.7 6.6c1 1 2.6 2.4 3.6 3.3l7.4 6.6c1 1 2.6 1 3.6 0l7.6-6.6c1-.9 2.6-2.3 3.6-3.3l7.7-6.7c1-.9 2.7-2.2 3.8-3l17.3-12.3c1.1-.8 1-1.9-.2-2.5l-19.6-10c-1.2-.6-3.2-1.5-4.4-2l-13-5.4z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/><path d="M227.813 101.557c.4-1.3.4-1.8.4-1.8 0-1.3-.1-3.5-.3-4.8l-1-2.9c-.6-1.2-1.6-3.1-2.4-4.2l-11.3-16.7c-.7-1.1-2-2.8-2.9-3.9l-14.6-18.3c-.8-1-1.6-1.9-1.7-1.8h-.2s-1.1.2-2.4.4l-22.3 4.4c-1.3.3-3.4.7-4.7.9l-.4.1c-1.3.2-3.4.1-4.7-.3l-18.7-6c-1.3-.4-3.4-1-4.6-1.3 0 0-3.8-.9-6.9-.8-3.1 0-6.9.8-6.9.8-1.3.3-3.4.9-4.6 1.3l-18.7 6c-1.3.4-3.4.5-4.7.3l-.4-.1c-1.3-.2-3.4-.7-4.7-.9l-22.5-4.2c-1.3-.3-2.4-.4-2.4-.4h-.2c-.1 0-.9.8-1.7 1.8L47.713 67.457c-.8 1-2.1 2.8-2.9 3.9l-11.3 16.7c-.7 1.1-1.8 3-2.4 4.2l-1 2.9c-.2 1.3-.4 3.5-.3 4.8 0 0 0 .4.4 1.8.7 2.4 2.4 4.6 2.4 4.6.8 1 2.3 2.7 3.2 3.6l33.1 35.2c.9 1 1.2 2.8.7 4l-6.9 16.3c-.5 1.2-.6 3.2-.1 4.5l1.9 5.1c1.6 4.3 4.3 8.1 7.9 11l6.7 5.4c1 .8 2.8 1.1 4 .5l21.2-10.1c1.2-.6 3-1.8 4-2.7l15.2-13.7c2.2-2 2.3-5.4.3-7.6l-31.9-21.5c-1.1-.7-1.5-2.3-.9-3.5l14-26.4c.6-1.2.7-3.1.2-4.3l-1.7-3.9c-.5-1.2-2-2.6-3.2-3.1l-41.1-15.4c-1.2-.5-1.2-1 0-1.1l26.5-2.5c1.3-.1 3.4.1 4.7.4l23.6 6.6c1.3.4 2.1 1.7 1.9 3l-8.2 44.9c-.2 1.3-.2 3.1.1 4.1.3 1 1.6 1.9 2.9 2.2l16.4 3.5c1.3.3 3.4.3 4.7 0l15.3-3.5c1.3-.3 2.6-1.3 2.9-2.2.3-1 .4-2.8.1-4.1l-8.1-44.9c-.2-1.3.6-2.6 1.9-3l23.6-6.6c1.3-.4 3.4-.5 4.7-.4l26.5 2.5c1.2.1 1.3.6 0 1.1l-41.1 15.4c-1.2.5-2.7 1.9-3.2 3.1l-1.7 3.9c-.5 1.2-.5 3.1.2 4.3l14.1 26.4c.6 1.2.2 2.8-.9 3.5l-31.9 21.5c-2.1 2.1-1.9 5.6.3 7.6l15.2 13.7c1 .9 2.8 2.1 4 2.7l21.3 10.1c1.2.6 3 .3 4-.5l6.7-5.4c3.6-2.9 6.3-6.7 7.8-11l1.9-5.1c.5-1.2.4-3.2-.1-4.5l-6.9-16.3c-.5-1.2-.2-3 .7-4l33.1-35.2c.9-.9 2.3-2.6 3.2-3.6-.2-.3 1.6-2.5 2.2-4.9z" fill="#fff" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/></g></svg>'
+        remove_engines:
+          - "google"
+          - "bing"
+```
 
 ### Window Switcher Provider
 

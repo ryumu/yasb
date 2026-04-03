@@ -4,7 +4,7 @@ import math
 import os
 import platform
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
@@ -137,7 +137,7 @@ def get_relative_time(iso_timestamp: str, short: bool = False) -> str:
     try:
         # Parse ISO 8601 timestamp
         updated = datetime.fromisoformat(iso_timestamp.replace("Z", "+00:00"))
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         diff = now - updated
 
         seconds = diff.total_seconds()
@@ -441,46 +441,6 @@ def format_pydantic_errors_to_yaml(exc: ValidationError) -> str:
     return yaml.dump(tree, default_flow_style=False, sort_keys=False)
 
 
-def build_widget_label(
-    self: QWidget,
-    content: str,
-    content_alt: str | None = None,
-    content_shadow: dict[str, Any] | None = None,
-):
-    def process_content(content: str, is_alt: bool = False) -> list[QLabel]:
-        label_parts = re.split("(<span.*?>.*?</span>)", content)
-        label_parts = [part for part in label_parts if part]
-        widgets = []
-        for part in label_parts:
-            part = part.strip()
-            if not part:
-                continue
-            if "<span" in part and "</span>" in part:
-                class_name = re.search(r'class=(["\'])([^"\']+?)\1', part)
-                class_result = class_name.group(2) if class_name else "icon"
-                icon = re.sub(r"<span.*?>|</span>", "", part).strip()
-                label = QLabel(icon)
-                label.setProperty("class", class_result)
-            else:
-                label = QLabel(part)
-                label.setProperty("class", "label alt" if is_alt else "label")
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setCursor(Qt.CursorShape.PointingHandCursor)
-            if content_shadow:
-                add_shadow(label, content_shadow)
-            self._widget_container_layout.addWidget(label)
-            widgets.append(label)
-            if is_alt:
-                label.hide()
-            else:
-                label.show()
-        return widgets
-
-    self._widgets = process_content(content)
-    if content_alt:
-        self._widgets_alt = process_content(content_alt, is_alt=True)
-
-
 def build_progress_widget(self, options: dict[str, Any]) -> None:
     """Builds a circular progress widget based on the provided options."""
     if not options["enabled"]:
@@ -508,14 +468,14 @@ def get_app_identifier():
     import winreg
     from pathlib import Path
 
-    from settings import APP_ID
+    from settings import APP_ID, IS_FROZEN
 
     try:
         key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f"SOFTWARE\\Classes\\AppUserModelId\\{APP_ID}")
         winreg.CloseKey(key)
         return APP_ID
     except:
-        if getattr(sys, "frozen", False):
+        if IS_FROZEN:
             # Check if YASB is installed via Scoop and if so, return the path to the executable
             # This is a workaround for the issue where the registry key doesn't exist to return the correct App name and icon
             scoop_shortcut = os.path.join(
@@ -554,7 +514,7 @@ class PopupWidget(QWidget):
     # Class-level registry to track open popups per parent widget
     # This will help to manage toggle behavior when we use keybindings to open/close popups
     # But this should be revisited maybe is there a better way to manage this
-    _open_popups: dict[int, "PopupWidget"] = {}
+    _open_popups: dict[int, PopupWidget] = {}
 
     def __init__(
         self,

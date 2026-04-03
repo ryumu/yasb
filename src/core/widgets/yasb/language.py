@@ -9,7 +9,7 @@ from PyQt6.QtGui import QCursor, QMouseEvent
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
 from win32con import WM_INPUTLANGCHANGEREQUEST
 
-from core.utils.utilities import PopupWidget, add_shadow, build_widget_label, refresh_widget_style
+from core.utils.utilities import PopupWidget, refresh_widget_style
 from core.utils.widgets.animation_manager import AnimationManager
 from core.utils.win32.bindings import (
     kernel32,
@@ -40,20 +40,8 @@ class LanguageWidget(BaseWidget):
         )
         self.config = config
         self._show_alt_label = False
-        # Construct container
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-        # Initialize container
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
-        # Add the container to the main widget layout
-        self.widget_layout.addWidget(self._widget_container)
-
-        build_widget_label(
-            self,
+        self._init_container(self.config.container_shadow.model_dump())
+        self.build_widget_label(
             self.config.label,
             self.config.label_alt,
             self.config.label_shadow.model_dump(),
@@ -227,7 +215,7 @@ class LanguageWidget(BaseWidget):
             if a0 and a0.button() == Qt.MouseButton.LeftButton:
                 success = self._switch_to_language(lang_info["id"])
                 if not success:
-                    logging.error(f"Failed to switch to {lang_info['name']}")
+                    logging.error("Failed to switch to %s", lang_info["name"])
                 self._menu.hide()
 
         container.mousePressEvent = mouse_press_handler
@@ -302,7 +290,7 @@ class LanguageWidget(BaseWidget):
                                         k_layouts, _ = winreg.QueryValueEx(key, "Layout Display Name")
                                     except FileNotFoundError:
                                         pass
-                        except WindowsError:
+                        except OSError:
                             pass
                 except:
                     pass
@@ -406,7 +394,7 @@ class LanguageWidget(BaseWidget):
 
             return True
         except Exception as e:
-            logging.error(f"Error switching language: {e}")
+            logging.error("Error switching language: %s", e)
             return False
 
     # Get the current keyboard layout

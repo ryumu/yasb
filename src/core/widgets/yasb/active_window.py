@@ -8,7 +8,7 @@ import win32process
 from PIL import Image
 from PyQt6.QtCore import QElapsedTimer, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel
+from PyQt6.QtWidgets import QLabel
 
 from core.event_service import EventService
 from core.utils.utilities import add_shadow
@@ -59,17 +59,7 @@ class ActiveWindowWidget(BaseWidget):
         self._active_label = config.label
         self._event_service = EventService()
         self._update_retry_count = 0
-        # Construct container
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-        # Initialize container
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
-        # Add the container to the main widget layout
-        self.widget_layout.addWidget(self._widget_container)
+        self._init_container(self.config.container_shadow.model_dump())
 
         self._window_title_text = QLabel()
         self._window_title_text.setProperty("class", "label")
@@ -159,7 +149,7 @@ class ActiveWindowWidget(BaseWidget):
                     if callable(transform):
                         result = transform()
             except re.error as e:
-                logging.warning(f"Invalid regex pattern '{pattern}': {e}")
+                logging.warning("Invalid regex pattern '%s': %s", pattern, e)
                 continue
 
         return result
@@ -221,7 +211,7 @@ class ActiveWindowWidget(BaseWidget):
 
             self._set_no_window_or_hide()
         except Exception:
-            logging.exception(f"Failed handling destroy event for HWND {hwnd}")
+            logging.exception("Failed handling destroy event for HWND %s", hwnd)
 
     def _toggle_title_text(self) -> None:
         if self.config.animation.enabled:
@@ -412,7 +402,9 @@ class ActiveWindowWidget(BaseWidget):
                     self.show()
         except Exception:
             logging.exception(
-                f"Failed to update active window title for window with HWND {hwnd} emitted by event {event}"
+                "Failed to update active window title for window with HWND %s emitted by event %s",
+                hwnd,
+                event,
             )
 
     def _update_text(self):

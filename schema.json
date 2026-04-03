@@ -3469,6 +3469,25 @@
             "on_middle": "do_nothing",
             "on_right": "do_nothing"
           }
+        },
+        "menu": {
+          "$ref": "#/$defs/CpuMenuConfig",
+          "default": {
+            "enabled": false,
+            "blur": true,
+            "round_corners": true,
+            "round_corners_type": "normal",
+            "border_color": "System",
+            "alignment": "right",
+            "direction": "down",
+            "offset_top": 6,
+            "offset_left": 0,
+            "graph_history_size": 60,
+            "show_graph": true,
+            "show_graph_grid": false,
+            "pin_icon": "\ue718",
+            "unpin_icon": "\ue77a"
+          }
         }
       },
       "title": "CpuConfig",
@@ -3490,6 +3509,94 @@
         "options"
       ],
       "title": "CpuEntry",
+      "type": "object"
+    },
+    "CpuMenuConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "blur": {
+          "default": true,
+          "title": "Blur",
+          "type": "boolean"
+        },
+        "round_corners": {
+          "default": true,
+          "title": "Round Corners",
+          "type": "boolean"
+        },
+        "round_corners_type": {
+          "default": "normal",
+          "title": "Round Corners Type",
+          "type": "string"
+        },
+        "border_color": {
+          "default": "System",
+          "title": "Border Color",
+          "type": "string"
+        },
+        "alignment": {
+          "default": "right",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "title": "Alignment",
+          "type": "string"
+        },
+        "direction": {
+          "default": "down",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "offset_top": {
+          "default": 6,
+          "title": "Offset Top",
+          "type": "integer"
+        },
+        "offset_left": {
+          "default": 0,
+          "title": "Offset Left",
+          "type": "integer"
+        },
+        "graph_history_size": {
+          "default": 60,
+          "maximum": 180,
+          "minimum": 10,
+          "title": "Graph History Size",
+          "type": "integer"
+        },
+        "show_graph": {
+          "default": true,
+          "title": "Show Graph",
+          "type": "boolean"
+        },
+        "show_graph_grid": {
+          "default": false,
+          "title": "Show Graph Grid",
+          "type": "boolean"
+        },
+        "pin_icon": {
+          "default": "\ue718",
+          "title": "Pin Icon",
+          "type": "string"
+        },
+        "unpin_icon": {
+          "default": "\ue77a",
+          "title": "Unpin Icon",
+          "type": "string"
+        }
+      },
+      "title": "CpuMenuConfig",
       "type": "object"
     },
     "CpuThresholdsConfig": {
@@ -5291,6 +5398,25 @@
             "animation": true
           }
         },
+        "menu": {
+          "$ref": "#/$defs/GpuMenuConfig",
+          "default": {
+            "enabled": false,
+            "blur": true,
+            "round_corners": true,
+            "round_corners_type": "normal",
+            "border_color": "System",
+            "alignment": "right",
+            "direction": "down",
+            "offset_top": 6,
+            "offset_left": 0,
+            "graph_history_size": 60,
+            "show_graph": true,
+            "show_graph_grid": false,
+            "pin_icon": "\ue718",
+            "unpin_icon": "\ue77a"
+          }
+        },
         "keybindings": {
           "default": [],
           "items": {
@@ -5327,6 +5453,94 @@
         "options"
       ],
       "title": "GpuEntry",
+      "type": "object"
+    },
+    "GpuMenuConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "blur": {
+          "default": true,
+          "title": "Blur",
+          "type": "boolean"
+        },
+        "round_corners": {
+          "default": true,
+          "title": "Round Corners",
+          "type": "boolean"
+        },
+        "round_corners_type": {
+          "default": "normal",
+          "title": "Round Corners Type",
+          "type": "string"
+        },
+        "border_color": {
+          "default": "System",
+          "title": "Border Color",
+          "type": "string"
+        },
+        "alignment": {
+          "default": "right",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "title": "Alignment",
+          "type": "string"
+        },
+        "direction": {
+          "default": "down",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "offset_top": {
+          "default": 6,
+          "title": "Offset Top",
+          "type": "integer"
+        },
+        "offset_left": {
+          "default": 0,
+          "title": "Offset Left",
+          "type": "integer"
+        },
+        "graph_history_size": {
+          "default": 60,
+          "maximum": 180,
+          "minimum": 10,
+          "title": "Graph History Size",
+          "type": "integer"
+        },
+        "show_graph": {
+          "default": true,
+          "title": "Show Graph",
+          "type": "boolean"
+        },
+        "show_graph_grid": {
+          "default": false,
+          "title": "Show Graph Grid",
+          "type": "boolean"
+        },
+        "pin_icon": {
+          "default": "\ue718",
+          "title": "Pin Icon",
+          "type": "string"
+        },
+        "unpin_icon": {
+          "default": "\ue77a",
+          "title": "Unpin Icon",
+          "type": "string"
+        }
+      },
+      "title": "GpuMenuConfig",
       "type": "object"
     },
     "GpuThresholdsConfig": {
@@ -7494,6 +7708,25 @@
             "animation": true
           }
         },
+        "menu": {
+          "$ref": "#/$defs/MemoryMenuConfig",
+          "default": {
+            "enabled": false,
+            "blur": true,
+            "round_corners": true,
+            "round_corners_type": "normal",
+            "border_color": "System",
+            "alignment": "right",
+            "direction": "down",
+            "offset_top": 6,
+            "offset_left": 0,
+            "graph_history_size": 60,
+            "show_graph": true,
+            "show_graph_grid": false,
+            "pin_icon": "\ue718",
+            "unpin_icon": "\ue77a"
+          }
+        },
         "keybindings": {
           "default": [],
           "items": {
@@ -7530,6 +7763,94 @@
         "options"
       ],
       "title": "MemoryEntry",
+      "type": "object"
+    },
+    "MemoryMenuConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "blur": {
+          "default": true,
+          "title": "Blur",
+          "type": "boolean"
+        },
+        "round_corners": {
+          "default": true,
+          "title": "Round Corners",
+          "type": "boolean"
+        },
+        "round_corners_type": {
+          "default": "normal",
+          "title": "Round Corners Type",
+          "type": "string"
+        },
+        "border_color": {
+          "default": "System",
+          "title": "Border Color",
+          "type": "string"
+        },
+        "alignment": {
+          "default": "right",
+          "enum": [
+            "left",
+            "center",
+            "right"
+          ],
+          "title": "Alignment",
+          "type": "string"
+        },
+        "direction": {
+          "default": "down",
+          "enum": [
+            "up",
+            "down"
+          ],
+          "title": "Direction",
+          "type": "string"
+        },
+        "offset_top": {
+          "default": 6,
+          "title": "Offset Top",
+          "type": "integer"
+        },
+        "offset_left": {
+          "default": 0,
+          "title": "Offset Left",
+          "type": "integer"
+        },
+        "graph_history_size": {
+          "default": 60,
+          "maximum": 180,
+          "minimum": 10,
+          "title": "Graph History Size",
+          "type": "integer"
+        },
+        "show_graph": {
+          "default": true,
+          "title": "Show Graph",
+          "type": "boolean"
+        },
+        "show_graph_grid": {
+          "default": false,
+          "title": "Show Graph Grid",
+          "type": "boolean"
+        },
+        "pin_icon": {
+          "default": "\ue718",
+          "title": "Pin Icon",
+          "type": "string"
+        },
+        "unpin_icon": {
+          "default": "\ue77a",
+          "title": "Unpin Icon",
+          "type": "string"
+        }
+      },
+      "title": "MemoryMenuConfig",
       "type": "object"
     },
     "MemoryThresholdsConfig": {
@@ -8019,6 +8340,21 @@
           "title": "Data Path",
           "type": "string"
         },
+        "start_floating": {
+          "default": false,
+          "title": "Start Floating",
+          "type": "boolean"
+        },
+        "paste_plain_text": {
+          "default": false,
+          "title": "Paste Plain Text",
+          "type": "boolean"
+        },
+        "enter_to_add_note": {
+          "default": true,
+          "title": "Enter To Add Note",
+          "type": "boolean"
+        },
         "container_padding": {
           "$ref": "#/$defs/PaddingConfig",
           "default": {
@@ -8056,7 +8392,10 @@
           "default": {
             "note": "\udb82\udd0c",
             "delete": "\ueab8",
-            "copy": "\uebcc"
+            "copy": "\uebcc",
+            "float_on": "\udb84\udcac",
+            "float_off": "\udb84\udca9",
+            "close": "\uf00d"
           }
         },
         "label_shadow": {
@@ -11562,9 +11901,22 @@
           "title": "Show Network",
           "type": "boolean"
         },
+        "hide_icons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Hide Icons",
+          "type": "array"
+        },
         "tooltip": {
           "default": true,
           "title": "Tooltip",
+          "type": "boolean"
+        },
+        "use_hook": {
+          "default": false,
+          "title": "Use Hook",
           "type": "boolean"
         },
         "container_padding": {
@@ -14026,6 +14378,28 @@
       "title": "WindowSwitcherProviderConfig",
       "type": "object"
     },
+    "WindowsDesktopsCallbacksConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "on_left": {
+          "default": "activate_workspace",
+          "title": "On Left",
+          "type": "string"
+        },
+        "on_middle": {
+          "default": "do_nothing",
+          "title": "On Middle",
+          "type": "string"
+        },
+        "on_right": {
+          "default": "toggle_context_menu",
+          "title": "On Right",
+          "type": "string"
+        }
+      },
+      "title": "WindowsDesktopsCallbacksConfig",
+      "type": "object"
+    },
     "WindowsDesktopsConfig": {
       "additionalProperties": false,
       "properties": {
@@ -14080,6 +14454,14 @@
             "left": 0,
             "bottom": 0,
             "right": 0
+          }
+        },
+        "callbacks": {
+          "$ref": "#/$defs/WindowsDesktopsCallbacksConfig",
+          "default": {
+            "on_left": "activate_workspace",
+            "on_middle": "do_nothing",
+            "on_right": "toggle_context_menu"
           }
         },
         "keybindings": {
@@ -14941,6 +15323,21 @@
         "copy": {
           "default": "\uebcc",
           "title": "Copy",
+          "type": "string"
+        },
+        "float_on": {
+          "default": "\udb84\udcac",
+          "title": "Float On",
+          "type": "string"
+        },
+        "float_off": {
+          "default": "\udb84\udca9",
+          "title": "Float Off",
+          "type": "string"
+        },
+        "close": {
+          "default": "\uf00d",
+          "title": "Close",
           "type": "string"
         }
       },

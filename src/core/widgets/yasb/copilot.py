@@ -5,16 +5,18 @@ Displays premium request usage data with a popup showing detailed statistics.
 
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from PyQt6.QtCore import QPointF, Qt, QTimer
 from PyQt6.QtGui import QBrush, QColor, QGuiApplication, QLinearGradient, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from core.utils.tooltip import CustomToolTip, set_tooltip
-from core.utils.utilities import PopupWidget, add_shadow, build_widget_label, refresh_widget_style
+from core.utils.utilities import PopupWidget, refresh_widget_style
 from core.utils.widgets.animation_manager import AnimationManager
 from core.utils.widgets.copilot.api import CopilotDataManager, CopilotUsageData
+from core.utils.widgets.github.auth import get_saved_token, save_token
+from core.utils.widgets.github.auth_dialog import GitHubAuthDialog
 from core.validation.widgets.yasb.copilot import CopilotConfig
 from core.widgets.base import BaseWidget
 
@@ -279,28 +281,20 @@ class CopilotWidget(BaseWidget):
     """GitHub Copilot Usage Widget with shared instance support."""
 
     validation_schema = CopilotConfig
-    _instances: list["CopilotWidget"] = []
+    _instances: list[CopilotWidget] = []
     _shared_timer: QTimer | None = None
     _initialized = False
 
     def __init__(self, config: CopilotConfig):
         super().__init__(timer_interval=None, class_name="copilot-widget")
         self.config = config
+        self._auth_dialog = None
 
         self._show_alt_label = False
         self._menu: PopupWidget | None = None
 
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
-        self.widget_layout.addWidget(self._widget_container)
-
-        build_widget_label(self, self.config.label, self.config.label_alt, self.config.label_shadow.model_dump())
+        self._init_container(self.config.container_shadow.model_dump())
+        self.build_widget_label(self.config.label, self.config.label_alt, self.config.label_shadow.model_dump())
 
         self.register_callback("toggle_label", self._toggle_label)
         self.register_callback("toggle_popup", self._toggle_popup)
@@ -316,7 +310,11 @@ class CopilotWidget(BaseWidget):
         # Initialize shared resources once
         if not CopilotWidget._initialized:
             CopilotWidget._initialized = True
-            token_val = self.config.token if self.config.token != "env" else os.getenv("YASB_COPILOT_TOKEN", "")
+            # Token resolution: config value → env var → saved OAuth token
+            if self.config.token == "env":
+                token_val = os.getenv("YASB_COPILOT_TOKEN", "") or get_saved_token("copilot")
+            else:
+                token_val = self.config.token or get_saved_token("copilot")
             CopilotDataManager.initialize(
                 token=token_val,
                 plan=self.config.plan,
@@ -356,7 +354,26 @@ class CopilotWidget(BaseWidget):
     def _toggle_popup(self):
         if self.config.animation.enabled:
             AnimationManager.animate(self, self.config.animation.type, self.config.animation.duration)
+        if not CopilotDataManager._token:
+            self._start_oauth_flow()
+            return
         self._show_popup()
+
+    def _start_oauth_flow(self):
+        if self._auth_dialog is not None:
+            self._auth_dialog.activateWindow()
+            return
+
+        self._auth_dialog = GitHubAuthDialog(
+            name="copilot",
+            save_fn=lambda t: save_token(t, "copilot"),
+        )
+        self._auth_dialog.auth_completed.connect(self._on_oauth_completed)
+        self._auth_dialog.finished.connect(lambda: setattr(self, "_auth_dialog", None))
+        self._auth_dialog.show()
+
+    def _on_oauth_completed(self, token: str):
+        CopilotDataManager.set_token(token)
 
     def _toggle_label(self):
         if self.config.animation.enabled:
@@ -491,7 +508,7 @@ class CopilotWidget(BaseWidget):
         title_row.addWidget(title)
         title_row.addStretch()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         next_reset = datetime(now.year + 1, 1, 1) if now.month == 12 else datetime(now.year, now.month + 1, 1)
         reset_lbl = QLabel(f"Resets on {next_reset.strftime('%b %d')}")
         reset_lbl.setProperty("class", "reset-date")

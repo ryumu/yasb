@@ -6,7 +6,7 @@ Thank you for your interest in contributing to YASB! This guide will help you ge
 
 ### Prerequisites
 
-- Python 3.12
+- Python 3.14 or higher
 - Git
 - A Windows development environment (YASB is Windows-only)
 
@@ -74,24 +74,6 @@ ruff check .
 ruff check --fix .
 ```
 
-### Project Structure
-
-```
-yasb/
-├── src/
-│   ├── core/
-│   │   ├── widgets/         # Widget implementations
-│   │   └── validation/      # Widget validation schemas
-│   ├── config.yaml          # Default configuration
-│   ├── styles.css           # Default styles
-│   └── main.py              # Application entry point
-├── docs/                    # Documentation
-├── demo/                    # Demo images
-├── .github/                 # GitHub workflows and templates
-├── pyproject.toml           # Project configuration
-└── README.md
-```
-
 ## Contributing Guidelines
 
 ### Types of Contributions
@@ -102,6 +84,19 @@ yasb/
 4. **Performance**: Optimize existing code
 5. **Features**: Add new application features
 
+
+### AI-Generated Code Policy
+
+If you use AI tools (e.g., GitHub Copilot, ChatGPT, or similar) to generate code for your pull request, you **must**:
+
+1. **Understand the codebase** before submitting. AI-generated code often lacks context about project conventions, architecture, and existing patterns.
+2. **Review every line** of the generated code. Do not blindly push AI output without verifying correctness, style, and compatibility with the project.
+3. **Test your changes thoroughly** to ensure they work as expected and do not introduce regressions.
+4. **Follow the project's coding standards** AI tools may not respect Ruff rules, naming conventions, or the project structure.
+
+> **Pull requests that appear to be untested, unreviewed AI-generated code will be closed without review.**
+
+We welcome contributions that leverage AI as an assistive tool, but the contributor is fully responsible for the quality and correctness of the submitted code.
 
 ### Creating a New Widget
 Follow the [Writing Widget](https://github.com/amnweb/yasb/wiki/Writing-Widget) guide for detailed instructions.

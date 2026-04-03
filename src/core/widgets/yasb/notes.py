@@ -23,14 +23,13 @@ from PyQt6.QtWidgets import (
 
 from core.config import HOME_CONFIGURATION_DIR
 from core.utils.tooltip import set_tooltip
-from core.utils.utilities import add_shadow, build_widget_label, sip
+from core.utils.utilities import sip
 from core.utils.widgets.animation_manager import AnimationManager
 from core.utils.widgets.notes.utils import ElidedLabel, FloatingWindowController, NotesPopup, NoteTextEdit
 from core.utils.win32.utilities import find_focused_screen, get_foreground_hwnd, set_foreground_hwnd  # type: ignore
 from core.utils.win32.window_actions import force_foreground_focus
 from core.validation.widgets.yasb.notes import NotesConfig
 from core.widgets.base import BaseWidget
-from settings import DEBUG
 
 
 class NotesWidget(BaseWidget):
@@ -52,8 +51,7 @@ class NotesWidget(BaseWidget):
         self.original_position: Any = None
         self.drag_position: QPoint | None = None
         self.menu: NotesPopup | None = None
-        self._widgets: list[QWidget] = []
-        self._widgets_alt: list[QWidget] = []
+
         self.scroll_area: QScrollArea | None = None
         self.scroll_widget: QWidget | None = None
         self.scroll_layout: QVBoxLayout | None = None
@@ -77,19 +75,8 @@ class NotesWidget(BaseWidget):
             self.notes_file = os.path.join(HOME_CONFIGURATION_DIR, "notes.json")
         self.notes = self._load_notes()
 
-        # Initialize container layout
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-
-        # Initialize container widget
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, config.container_shadow.model_dump())
-        self.widget_layout.addWidget(self._widget_container)
-
-        build_widget_label(self, self._label_content, self._label_alt_content, config.label_shadow.model_dump())
+        self._init_container(config.container_shadow.model_dump())
+        self.build_widget_label(self._label_content, self._label_alt_content, config.label_shadow.model_dump())
 
         self.register_callback("toggle_label", self._toggle_label)
         self.register_callback("toggle_menu", self._toggle_menu)
@@ -646,21 +633,19 @@ class NotesWidget(BaseWidget):
         """Load notes from JSON file"""
         try:
             if os.path.exists(self.notes_file):
-                if DEBUG:
-                    logging.debug(f"Loading notes from {self.notes_file}")
-                with open(self.notes_file, "r", encoding="utf-8") as f:
+                logging.debug("Loading notes from %s", self.notes_file)
+                with open(self.notes_file, encoding="utf-8") as f:
                     return list(json.load(f))
         except Exception as e:
-            logging.error(f"Error loading notes: {e}")
+            logging.error("Error loading notes: %s", e)
 
         return []
 
     def _save_notes(self) -> None:
         """Save notes to JSON file"""
         try:
-            if DEBUG:
-                logging.debug(f"Saving notes to {self.notes_file}")
+            logging.debug("Saving notes to %s", self.notes_file)
             with open(self.notes_file, "w", encoding="utf-8") as f:
                 json.dump(self.notes, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            logging.error(f"Error saving notes: {e}")
+            logging.error("Error saving notes: %s", e)

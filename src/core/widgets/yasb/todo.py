@@ -25,7 +25,7 @@ from PyQt6.QtWidgets import (
 
 from core.config import HOME_CONFIGURATION_DIR
 from core.utils.tooltip import set_tooltip
-from core.utils.utilities import PopupWidget, add_shadow, build_widget_label, refresh_widget_style
+from core.utils.utilities import PopupWidget, refresh_widget_style
 from core.utils.widgets.animation_manager import AnimationManager
 from core.utils.win32.utilities import apply_qmenu_style
 from core.validation.widgets.yasb.todo import TodoConfig
@@ -50,16 +50,8 @@ class TodoWidget(BaseWidget):
         self._show_completed = False
         self._category_filter = None
 
-        self._widget_container_layout = QHBoxLayout()
-        self._widget_container_layout.setSpacing(0)
-        self._widget_container_layout.setContentsMargins(0, 0, 0, 0)
-        self._widget_container = QFrame()
-        self._widget_container.setLayout(self._widget_container_layout)
-        self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
-        self.widget_layout.addWidget(self._widget_container)
-
-        build_widget_label(self, self.config.label, self.config.label_alt, self.config.label_shadow.model_dump())
+        self._init_container(self.config.container_shadow.model_dump())
+        self.build_widget_label(self.config.label, self.config.label_alt, self.config.label_shadow.model_dump())
 
         self.register_callback("toggle_label", self._toggle_label)
         self.register_callback("toggle_menu", self._toggle_menu)
@@ -85,13 +77,13 @@ class TodoWidget(BaseWidget):
         try:
             tasks_file = self._get_tasks_file_path()
             if os.path.exists(tasks_file):
-                with open(tasks_file, "r", encoding="utf-8") as f:
+                with open(tasks_file, encoding="utf-8") as f:
                     self._tasks = json.load(f)
                 self._tasks.sort(key=lambda t: t["order"], reverse=True)
             else:
                 self._tasks = []
         except Exception as e:
-            logging.error(f"Error loading tasks: {e}")
+            logging.error("Error loading tasks: %s", e)
             self._tasks = []
 
     def _save_tasks(self):
@@ -100,7 +92,7 @@ class TodoWidget(BaseWidget):
             with open(tasks_file, "w", encoding="utf-8") as f:
                 json.dump(self._tasks, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            logging.error(f"Error saving tasks: {e}")
+            logging.error("Error saving tasks: %s", e)
 
     def _add_new_task(self, dialog):
         title = self._title_input.text().strip()
@@ -725,7 +717,7 @@ class TodoWidget(BaseWidget):
                 info_layout.addWidget(delete_btn)
                 text_layout.addWidget(info_row)
             except (ValueError, TypeError) as e:
-                logging.error(f"Error formatting task info: {e}")
+                logging.error("Error formatting task info: %s", e)
 
         container_layout.addWidget(text_container)
         container.setAcceptDrops(True)
@@ -800,7 +792,7 @@ class TodoWidget(BaseWidget):
                 self._save_tasks()
                 self._refresh_menu_task_list()
         except Exception as e:
-            logging.error(f"Failed to reorder tasks: {e}")
+            logging.error("Failed to reorder tasks: %s", e)
 
 
 class TaskFrame(QFrame):

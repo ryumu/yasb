@@ -2,11 +2,13 @@ import asyncio
 import io
 import logging
 import time
+from collections.abc import Callable
 from functools import partial
-from typing import Any, Callable
+from typing import Any
 
 from PIL import Image
 from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QApplication
 from qasync import asyncSlot  # type: ignore
 from winrt.windows.media.control import (
     GlobalSystemMediaTransportControlsSession,
@@ -68,6 +70,10 @@ class WindowsMedia(QObject, metaclass=QSingleton):
 
         self._loop.create_task(self.run())
 
+        app = QApplication.instance()
+        if app is not None:
+            app.aboutToQuit.connect(self._on_quit)
+
     @property
     def current_session(self) -> SessionState | None:
         """Get the current session state"""
@@ -92,13 +98,20 @@ class WindowsMedia(QObject, metaclass=QSingleton):
         except asyncio.CancelledError:
             pass
         except Exception as e:
-            logger.error(f"Failed to start WindowsMedia worker: {e}", exc_info=True)
+            logger.error("Failed to start WindowsMedia worker: %s", e, exc_info=True)
         finally:
             self._running = False
 
-    async def stop(self):
-        """Stop the WindowsMedia worker refresh loop"""
+    def _on_quit(self):
+        """Unsubscribe all WinRT event handlers on application quit"""
         self._running = False
+        for state in list(self._trackers.values()):
+            for cb in state.cleanup_callbacks:
+                try:
+                    cb()
+                except Exception:
+                    pass
+        self._trackers.clear()
 
     async def _refresh_sessions(self, manager: SessionManager):
         """Refresh session states from the manager"""
@@ -185,7 +198,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
                 state.thumbnail = None
             self.media_properties_changed.emit()
         except Exception as e:
-            logger.error(f"Error syncing session: {e}", exc_info=True)
+            logger.error("Error syncing session: %s", e, exc_info=True)
 
     async def _on_timeline_properties_changed(self, session: MediaSession):
         """Handle timeline properties change"""
@@ -205,7 +218,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
             state.last_update_time = new_update
             self.timeline_info_changed.emit()
         except Exception as e:
-            logger.error(f"Error syncing session: {e}", exc_info=True)
+            logger.error("Error syncing session: %s", e, exc_info=True)
 
     async def _on_playback_info_changed(self, session: MediaSession):
         """Handle playback info change"""
@@ -223,7 +236,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
             state.timeline_enabled = playback.controls.is_playback_position_enabled if playback.controls else False
             self.playback_info_changed.emit()
         except Exception as e:
-            logger.error(f"Error syncing session: {e}", exc_info=True)
+            logger.error("Error syncing session: %s", e, exc_info=True)
 
     def _interpolate_and_emit(self, trackers: dict[str, SessionState]):
         """Interpolate the timeline and emit media data"""
@@ -276,7 +289,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
 
             return pillow_image
         except Exception as e:
-            logging.error(f"get_thumbnail(): Error occurred when loading the thumbnail: {e}")
+            logging.error("get_thumbnail(): Error occurred when loading the thumbnail: %s", e)
             return None
         finally:
             # Close the stream
@@ -322,7 +335,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
             if self.current_session and self.current_session.session is not None:
                 await self.current_session.session.try_toggle_play_pause_async()
         except Exception as e:
-            logger.error(f"Error playing/pausing: {e}")
+            logger.error("Error playing/pausing: %s", e)
 
     @asyncSlot()
     async def prev(self):
@@ -331,7 +344,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
             if self.current_session and self.current_session.session is not None:
                 await self.current_session.session.try_skip_previous_async()
         except Exception as e:
-            logger.error(f"Error skipping previous: {e}")
+            logger.error("Error skipping previous: %s", e)
 
     @asyncSlot()
     async def next(self):
@@ -340,7 +353,7 @@ class WindowsMedia(QObject, metaclass=QSingleton):
             if self.current_session and self.current_session.session is not None:
                 await self.current_session.session.try_skip_next_async()
         except Exception as e:
-            logger.error(f"Error skipping next: {e}")
+            logger.error("Error skipping next: %s", e)
 
     async def seek_to_position(self, position: float):
         """Seek to specific position in seconds."""
@@ -352,4 +365,4 @@ class WindowsMedia(QObject, metaclass=QSingleton):
                 self.current_session.last_update_time = time.time()
                 self._interpolate_and_emit(self._trackers)
         except Exception as e:
-            logger.error(f"Error seeking to position: {e}")
+            logger.error("Error seeking to position: %s", e)
