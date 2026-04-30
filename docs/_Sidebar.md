@@ -29,6 +29,7 @@
     - [GPU](./(Widget)-GPU)
     - [Home](./(Widget)-Home)
     - [Disk](./(Widget)-Disk)
+    - [Desktop Name](./(Widget)-Desktop-Name)
     - [Language](./(Widget)-Language)
     - [Launchpad](./(Widget)-Launchpad)
     - [Libre Hardware Monitor](./(Widget)-Libre-HW-Monitor)

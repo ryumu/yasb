@@ -22,7 +22,7 @@ from core.utils.utilities import PopupWidget, refresh_widget_style
 from core.utils.win32.utils import apply_qmenu_style
 from core.validation.widgets.yasb.windows_desktops import WindowsDesktopsConfig
 from core.widgets.base import BaseWidget
-from core.widgets.services.windows_desktops.service import WindowsDesktopService
+from core.widgets.services.windows_desktops.service import PYVDA_AVAILABLE, WindowsDesktopService
 
 
 class WorkspaceButton(QPushButton):
@@ -303,6 +303,11 @@ class WorkspaceWidget(BaseWidget):
     validation_schema = WindowsDesktopsConfig
 
     def __init__(self, config: WindowsDesktopsConfig):
+        if not PYVDA_AVAILABLE:
+            logging.warning("pyvda is not available; windows_desktops widget will be disabled")
+            super().__init__(class_name="windows-desktops disabled")
+            self.config = config
+            return
         super().__init__(class_name="windows-desktops")
         self.config = config
         self._svc = WindowsDesktopService()
@@ -311,9 +316,10 @@ class WorkspaceWidget(BaseWidget):
         self._svc.desktop_changed.connect(self._on_desktop_changed)
         self._svc.desktops_updated.connect(self._on_update_desktops)
 
-        self._virtual_desktops = range(1, len(self._svc.get_desktops()) + 1)
+        self._virtual_desktops = range(1, len(self._svc.get_desktops() or []) + 1)
         self._prev_workspace_index = None
-        self._curr_workspace_index = self._svc.get_current_desktop().number
+        current_desktop = self._svc.get_current_desktop()
+        self._curr_workspace_index = current_desktop.number if current_desktop else 1
         self._workspace_buttons: list[WorkspaceButton] = []
 
         self._clicked_button: WorkspaceButton | None = None

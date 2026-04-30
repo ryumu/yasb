@@ -19,6 +19,8 @@ except Exception:
     get_virtual_desktops = None
     set_wallpaper_for_all_desktops = None
 
+PYVDA_AVAILABLE = VirtualDesktop is not None and get_virtual_desktops is not None
+
 logger = logging.getLogger("windows_desktop_service")
 
 SKIP_WINDOW_CLASSES = frozenset(
@@ -89,8 +91,9 @@ class WindowsDesktopService(QObject):
         self._desktop_count: int = 0
         self._current_index: int = 0
         try:
-            self._desktop_count = len(get_virtual_desktops())
-            self._current_index = VirtualDesktop.current().number
+            if get_virtual_desktops is not None:
+                self._desktop_count = len(get_virtual_desktops())
+                self._current_index = VirtualDesktop.current().number
         except Exception:
             pass
 
@@ -144,6 +147,8 @@ class WindowsDesktopService(QObject):
 
     def _refresh_state(self, update_buttons: bool = False):
         """Refresh cached state and emit desktops_updated if changed."""
+        if get_virtual_desktops is None:
+            return
         try:
             desktop_count = len(get_virtual_desktops())
             current_index = VirtualDesktop.current().number
@@ -192,6 +197,8 @@ class WindowsDesktopService(QObject):
 
     def notify_desktops_updated(self, update_buttons: bool = False):
         """Force a refresh (e.g. after rename/create/delete)."""
+        if get_virtual_desktops is None:
+            return
         try:
             current = VirtualDesktop.current().number
         except Exception:
@@ -205,10 +212,14 @@ class WindowsDesktopService(QObject):
 
     @staticmethod
     def get_desktops():
+        if get_virtual_desktops is None:
+            return []
         return get_virtual_desktops()
 
     @staticmethod
     def get_current_desktop():
+        if VirtualDesktop is None:
+            return None
         return VirtualDesktop.current()
 
     @staticmethod
