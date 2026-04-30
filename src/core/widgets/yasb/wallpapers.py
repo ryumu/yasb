@@ -1,9 +1,8 @@
 from core.utils.tooltip import set_tooltip
-from core.utils.widgets.animation_manager import AnimationManager
-from core.utils.widgets.wallpapers.wallpaper_manager import WallpaperManager
-from core.utils.widgets.wallpapers.wallpapers_gallery import ImageGallery
 from core.validation.widgets.yasb.wallpapers import WallpapersConfig
 from core.widgets.base import BaseWidget
+from core.widgets.services.wallpapers.wallpaper_manager import WallpaperManager
+from core.widgets.services.wallpapers.wallpapers_gallery import ImageGallery
 
 
 class WallpapersWidget(BaseWidget):
@@ -27,8 +26,8 @@ class WallpapersWidget(BaseWidget):
         self._manager.toggle_gallery_signal.connect(self._on_toggle_gallery_request)
 
         # Construct container
-        self._init_container(self.config.container_shadow.model_dump())
-        self.build_widget_label(self.config.label, None, self.config.label_shadow.model_dump())
+        self._init_container()
+        self.build_widget_label(self.config.label, None)
 
         if self.config.tooltip:
             set_tooltip(self, "Change Wallpaper")
@@ -50,8 +49,6 @@ class WallpapersWidget(BaseWidget):
 
     def _toggle_widget(self):
         """Toggle the visibility of the widget."""
-        if self.config.animation.enabled:
-            AnimationManager.animate(self, self.config.animation.type, self.config.animation.duration)
 
         if self._image_gallery is not None and self._image_gallery.isVisible():
             self._image_gallery.fade_out_and_close_gallery()

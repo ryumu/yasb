@@ -79,8 +79,92 @@ Example how to target widget container
 ```
 
 > **Note:**
-> Keep in mind that YASB is written in Python and styled with very limited CSS. You can't use CSS3 or any other advanced CSS features.
+> Keep in mind that YASB is written in Python using Qt framework and utilizes a custom CSS engine, so styling might be different from regular CSS3.
 
+## Animations
+Animations can be added to widgets using [transition](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/transition) property. It follows the same syntax as CSS transitions, but uses custom [animation engine](https://github.com/Video-Nomad/qt-css-engine) for PyQt6/PySide6.
+
+Example of simple color transition on hover:
+```css
+.glazewm-workspaces .ws-btn {
+    /* other properties... */
+    background: transparent;
+    transition: background 200ms ease-in-out;
+}
+
+.glazewm-workspaces .ws-btn:hover {
+    /* This will be animated on mouse hover */
+    background: gray;
+}
+```
+Example of widget size and background transition on class change using `all` keyword and padding:
+```css
+.glazewm-workspaces .ws-btn {
+    /* other properties... */
+    padding: 1px 4px;
+    transition: all 200ms ease-out;
+}
+
+.glazewm-workspaces .ws-btn.focused_populated,
+.glazewm-workspaces .ws-btn.focused_empty {
+     /* These two properties be animated on workspace change */
+    pading: 1px 50px;
+    background: gray;
+}
+```
+Same can be done with `width` and `height` properties, or `min/max-width` and `min/max-height` if widget requires that (usually when nested widgets are involved, like GlazeWM with icons):
+```css
+.glazewm-workspaces .ws-btn {
+    /* other properties */
+    transition: all 200ms ease-out;
+}
+
+.glazewm-workspaces .ws-btn.focused_populated,
+.glazewm-workspaces .ws-btn.focused_empty {
+    /* Size will be animated from the default to the min/max values*/
+    min-width: 50px;
+    max-width: 50px;
+}
+```
+Global opacity transition for all widget containers to add subtle fade effect on click:
+```css
+.widget-container {
+    opacity: 1.0;
+    transition: opacity 80ms;
+}
+
+.widget-container:clicked,
+.widget-container:pressed {
+    opacity: 0.5;
+}
+```
+A `delay` can also be added to the transition as second time variable `transition: all 200ms 50ms ease-out`. Negative delay will result in animation starting instantly, but as if it was playing for the time of the delay.
+
+Easing functions can be used as well, for example `ease-in-out` or `cubic-bezier(0.5, 0.2, 0.3, 0.9)`. Check this tool for [cubic-bezier](https://cubic-bezier.com) visualization.
+
+[Steps](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/easing-function/steps) function is also supported.
+
+## Animation-supported pseudo-classes
+- `:hover`
+- `:focus`
+- `:active` (Window focus pseudo. Not the same as `:active` in regular CSS)
+- `:pressed` (Equivalent to `:active` in regular CSS)
+- `:checked`
+- `:clicked` (Special case. Will play the full animation on click)
+
+## Additional supported CSS properties
+- `opacity`
+- `box-shadow`
+- `text-shadow`
+- `cursor` (not animatable)
+
+## Animation limitations
+Animations can't be added to sub-controls, for example `::item` or `::chunk` or others. Only regular QtCSS styling is available for those.
+
+## Supported color functions (not animatable)
+- `linear-gradient()`
+- `radial-gradient()`
+- `conic-gradient()`
 
 ## Follow OS Theme
 YASB can follow the OS theme, if you have OS dark style YASB will add class `.dark` on the root element, if you want to have different light and dark themes you can use the following CSS to achieve this.
@@ -220,35 +304,6 @@ Example of tooltip styling:
     color: #a6adc8;
 }
 ```
-## Shadow Options
-
-Most widgets support `label_shadow` and `container_shadow`, but you should check the widget documentation to confirm support before configuring shadows.
-
-### How to Configure Shadows
-
-Add the following to your per-widget configuration (YAML):
-
-```yaml
-label_shadow:
-  enabled: true
-  offset: [0, 2]        # [x, y] offset in pixels
-  radius: 3             # Blur radius
-  color: "#000000"    # Hex color (with optional alpha) or color name
-container_shadow:
-  enabled: true
-  offset: [0, 2]
-  radius: 3
-  color: "#00000080"
-```
-
-- `enabled`: Set to `true` to enable the shadow.
-- `offset`: List or tuple of two numbers for the shadow's x and y offset.
-- `radius`: Blur radius for the shadow.
-- `color`: Color of the shadow. Supports hex (with or without alpha) or named colors (e.g., "black").
-
-> **Note**:
-> If the container is transparent, the shadow will be applied to the child container and buttons instead. This can cause double shadows if you also apply shadows to those child elements. To avoid this, only apply shadows to the container that is actually visible.
-
 ## Icons
 There is a nice app at [Character Map UWP](https://github.com/character-map-uwp/Character-Map-UWP) where you can select a font, click on icons, and copy the UTF-16 value. Alternatively, you can visit the Nerd Fonts site and do the same under the icons section.
 

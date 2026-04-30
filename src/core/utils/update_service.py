@@ -19,7 +19,8 @@ from dataclasses import dataclass
 
 import certifi
 
-from core.utils.utilities import ToastNotifier, app_data_path, get_app_identifier, get_architecture
+from core.utils.system import app_data_path, get_architecture
+from core.utils.utilities import ToastNotifier, get_app_identifier
 from settings import APP_ID, BUILD_VERSION, IS_FROZEN, RELEASE_CHANNEL, SCRIPT_PATH
 
 # GitHub API configuration
@@ -34,6 +35,12 @@ ARCHITECTURE = get_architecture()
 # Module-level singletons
 _update_service_instance: UpdateService | None = None
 _update_checker_started = False
+_update_callbacks: list = []
+
+
+def register_update_callback(fn) -> None:
+    """Register a callable to be invoked when an update is found."""
+    _update_callbacks.append(fn)
 
 
 def _get_msi_arch_suffix() -> str:
@@ -265,7 +272,6 @@ class UpdateService:
                 if not skip_version_check:
                     current_commit = self._get_current_commit_hash()
                     if commit_hash and commit_hash == current_commit:
-                        logging.debug("Already on latest dev build: %s", current_commit)
                         return None
             else:
                 version = release_data.get("tag_name", "").lstrip("vV")
@@ -397,6 +403,8 @@ def start_update_checker() -> None:
             release_info = update_service.check_for_updates(timeout=10)
 
             if release_info:
+                for cb in _update_callbacks:
+                    cb(release_info)
                 icon_path = f"{SCRIPT_PATH}/assets/images/app_transparent.png"
                 toaster = ToastNotifier()
 

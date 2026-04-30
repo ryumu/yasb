@@ -2,7 +2,7 @@ import datetime
 
 from cx_Freeze import Executable, setup
 
-from core.utils.utilities import detect_architecture
+from core.utils.system import detect_architecture
 from settings import APP_ID, BUILD_VERSION, RELEASE_CHANNEL
 
 arch_info = detect_architecture()
@@ -41,9 +41,9 @@ build_options = {
         ("assets/images/app_transparent.png", "assets/images/app_transparent.png"),
         ("assets/sound/notification01.wav", "assets/sound/notification01.wav"),
         ("assets/sound/notification02.wav", "assets/sound/notification02.wav"),
-        ("core/utils/widgets/quick_launch/providers/resources/Everything64.dll", "lib/Everything64.dll"),
-        (f"core/utils/widgets/systray/hook/{hook_dll_name}", f"lib/{hook_dll_name}"),
-        ("core/utils/widgets/quick_launch/providers/resources/emoji.json", "lib/emoji.json"),
+        ("core/widgets/services/quick_launch/providers/resources/Everything64.dll", "lib/Everything64.dll"),
+        (f"core/widgets/services/systray/hook/{hook_dll_name}", f"lib/{hook_dll_name}"),
+        ("core/widgets/services/quick_launch/providers/resources/emoji.json", "lib/emoji.json"),
     ],
 }
 
@@ -113,7 +113,7 @@ executables = [
         target_name="yasb",
     ),
     Executable(
-        "core/ui/windows/themes.py",
+        "core/ui/views/themes.py",
         base="gui",
         icon="assets/images/app_icon.ico",
         copyright=f"Copyright (C) {datetime.datetime.now().year} AmN",

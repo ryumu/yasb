@@ -6,7 +6,7 @@ from PyQt6.QtCore import QObject
 from PyQt6.QtWidgets import QWidget
 
 from core.utils.alert_dialog import raise_info_alert
-from core.utils.utilities import format_pydantic_errors_to_yaml
+from core.utils.validation_errors import format_pydantic_errors_to_yaml
 from settings import DEFAULT_CONFIG_FILENAME
 
 
@@ -76,7 +76,11 @@ class WidgetBuilder(QObject):
                 except Exception:
                     logging.debug("WidgetBuilder failed to collect nested listeners for Grouper")
 
-                widget = widget_cls(config=pydantic_config)
+                # Pass widget_configs to GrouperWidget
+                if widget_cls.__name__ == "GrouperWidget" and widget_module.__name__.endswith("yasb.grouper"):
+                    widget = widget_cls(config=pydantic_config, widget_configs=self._widget_configurations)
+                else:
+                    widget = widget_cls(config=pydantic_config)
                 widget.widget_name = widget_name
                 return widget
             except AttributeError, ValueError, ModuleNotFoundError:

@@ -20,7 +20,7 @@ from PyQt6.QtCore import (
     QTimer,
     pyqtSignal,
 )
-from PyQt6.QtGui import QAction, QColor, QCursor, QDrag, QIcon, QKeySequence, QPainter, QPixmap, QShortcut, QWheelEvent
+from PyQt6.QtGui import QAction, QColor, QDrag, QIcon, QKeySequence, QPainter, QPixmap, QShortcut, QWheelEvent
 from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
     QApplication,
@@ -41,12 +41,11 @@ from PyQt6.QtWidgets import (
 
 from core.config import HOME_CONFIGURATION_DIR
 from core.utils.shell_utils import shell_open
-from core.utils.utilities import add_shadow, refresh_widget_style
-from core.utils.widgets.animation_manager import AnimationManager
+from core.utils.utilities import refresh_widget_style
 from core.utils.win32.app_loader import AppListLoader, ShortcutResolver
+from core.utils.win32.backdrop import enable_blur
 from core.utils.win32.icon_extractor import IconExtractorUtil, UrlExtractorUtil
-from core.utils.win32.utilities import apply_qmenu_style, get_foreground_hwnd, set_foreground_hwnd
-from core.utils.win32.win32_accent import Blur
+from core.utils.win32.utils import apply_qmenu_style, get_foreground_hwnd, set_foreground_hwnd
 from core.utils.win32.window_actions import force_foreground_focus
 from core.validation.widgets.yasb.launchpad import LaunchpadConfig
 from core.widgets.base import BaseWidget
@@ -277,14 +276,12 @@ class AppDialog(QDialog):
         button_layout.setContentsMargins(0, 0, 0, 0)
 
         self.cancel_btn = QPushButton("Cancel")
-        self.cancel_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.cancel_btn.setProperty("class", "button")
         self.cancel_btn.clicked.connect(self.reject)
         button_layout.addWidget(self.cancel_btn)
 
         self.add_btn = QPushButton("Save" if self.is_edit_mode else "Add")
         self.add_btn.setProperty("class", f"button {'save' if self.is_edit_mode else 'add'}")
-        self.add_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.add_btn.clicked.connect(self.accept)
         button_layout.addWidget(self.add_btn)
         layout.addWidget(button_container)
@@ -588,14 +585,8 @@ class LaunchpadWidget(BaseWidget):
         self._window = config.window.model_dump()
         self._window_style = config.window_style.model_dump()
         self._window_animation = config.window_animation.model_dump()
-        self._animation = config.animation.model_dump()
         self._shortcuts = config.shortcuts.model_dump()
-        self._padding = config.container_padding.model_dump()
         self._group_apps = config.group_apps
-        self._label_shadow = config.label_shadow.model_dump()
-        self._container_shadow = config.container_shadow.model_dump()
-        self._app_title_shadow = config.app_title_shadow.model_dump()
-        self._app_icon_shadow = config.app_icon_shadow.model_dump()
         self._dpr = 1.0
         # Setup directories and files
         self._launchpad_dir = os.path.join(HOME_CONFIGURATION_DIR, "launchpad")
@@ -617,8 +608,8 @@ class LaunchpadWidget(BaseWidget):
         self._num_drag_items = 0
         self._previous_hwnd = 0
 
-        self._init_container(self._container_shadow)
-        self.build_widget_label(self._label, None, self._label_shadow)
+        self._init_container()
+        self.build_widget_label(self._label, None)
 
         # Register callbacks
         self.register_callback("toggle_launchpad", self._toggle_launchpad)
@@ -627,8 +618,6 @@ class LaunchpadWidget(BaseWidget):
         self.callback_middle = self.config.callbacks.on_middle
 
     def _toggle_launchpad(self):
-        if self._animation["enabled"]:
-            AnimationManager.animate(self, self._animation["type"], self._animation["duration"])
         if self._launchpad_popup and self._launchpad_popup.isVisible():
             self._hide_launchpad()
         else:
@@ -665,7 +654,6 @@ class LaunchpadWidget(BaseWidget):
             app_icon.setProperty("class", "app-icon url")
         else:
             app_icon.setProperty("class", "app-icon")
-        app_icon.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         app_icon.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         app_icon.setAcceptDrops(True)
         app_icon.app_data = app_data
@@ -681,13 +669,11 @@ class LaunchpadWidget(BaseWidget):
         icon_label = QLabel()
         icon_label.setFixedSize(self._app_icon_size, self._app_icon_size)
         icon_label.setProperty("class", "icon")
-        add_shadow(icon_label, self._app_icon_shadow)
 
         title_label = QLabel(app_data.get("title", "Unknown"))
         title_label.setProperty("class", "title")
         title_label.setWordWrap(True)
         title_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
-        add_shadow(title_label, self._app_title_shadow)
 
         container_layout.addWidget(
             icon_label, stretch=1, alignment=Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter
@@ -1347,11 +1333,9 @@ class LaunchpadWidget(BaseWidget):
         self._focus_icon(new_index)
 
     def _popup_enter_event(self, event):
-        self.popup.setCursor(Qt.CursorShape.ArrowCursor)
         QWidget.enterEvent(self.popup, event)
 
     def _popup_leave_event(self, event):
-        self.popup.setCursor(Qt.CursorShape.ArrowCursor)
         QWidget.leaveEvent(self.popup, event)
 
     def _scroll_to_icon(self, icon):
@@ -1553,7 +1537,6 @@ class LaunchpadWidget(BaseWidget):
         group_widget = QFrame()
         group_widget.setProperty("class", "group-icon")
         group_widget.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        group_widget.setCursor(Qt.CursorShape.PointingHandCursor)
         group_widget.is_group = True
         group_widget.group_name = group_name
         group_widget.apps_in_group = apps
@@ -1611,7 +1594,6 @@ class LaunchpadWidget(BaseWidget):
         title_label.setProperty("class", "title")
         title_label.setWordWrap(True)
         title_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
-        add_shadow(title_label, self._app_title_shadow)
 
         # Add title with same alignment as regular apps
         container_layout.addWidget(title_label, stretch=2, alignment=Qt.AlignmentFlag.AlignHCenter)
@@ -1642,7 +1624,6 @@ class LaunchpadWidget(BaseWidget):
         if not hasattr(self._launchpad_popup, "back_button"):
             back_button = QPushButton()
             back_button.setProperty("class", "group-back-button")
-            back_button.setCursor(Qt.CursorShape.PointingHandCursor)
             back_button.setFixedHeight(40)
             back_button.clicked.connect(self._close_group)
             self._launchpad_popup.search_container.layout().insertWidget(0, back_button)
@@ -1770,9 +1751,8 @@ class LaunchpadWidget(BaseWidget):
     def _apply_blur(self):
         if self._launchpad_popup:
             try:
-                Blur(
+                enable_blur(
                     self._launchpad_popup.winId(),
-                    Acrylic=False,
                     DarkMode=True if not self._window["fullscreen"] else False,
                     RoundCorners=self._window_style["round_corners"] if not self._window["fullscreen"] else False,
                     RoundCornersType=self._window_style["round_corners_type"],
