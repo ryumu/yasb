@@ -4,15 +4,15 @@ import hmac
 import json
 import logging
 import math
-import time
 import re
+import time
 import urllib.error
 import urllib.request
 import uuid
 
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QWidget
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
 from core.utils.tooltip import set_tooltip
 from core.validation.widgets.ryumu.switchbot import SwitchBotConfig
@@ -97,7 +97,7 @@ class SwitchBotWidget(BaseWidget):
     def _get_auth_headers(self):
         nonce = str(uuid.uuid4())
         t = int(round(time.time() * 1000))
-        string_to_sign = "{}{}{}".format(self._token, t, nonce)
+        string_to_sign = f"{self._token}{t}{nonce}"
 
         string_to_sign_bytes = bytes(string_to_sign, "utf-8")
         secret_bytes = bytes(self._secret, "utf-8")
@@ -142,10 +142,10 @@ class SwitchBotWidget(BaseWidget):
                         self._humidity = humidity
                         self._ah = self._calculate_absolute_humidity(temp, humidity)
                 else:
-                    logging.error(f"SwitchBot API returned status code: {response.getcode()}")
+                    logging.error("SwitchBot API returned status code: %s", response.getcode())
 
         except Exception as e:
-            logging.error(f"Failed to fetch SwitchBot status: {e}")
+            logging.error("Failed to fetch SwitchBot status: %s", e)
 
         self._update_label_text()
 
@@ -159,7 +159,7 @@ class SwitchBotWidget(BaseWidget):
             )
             label.setPixmap(scaled_pixmap)
         else:
-            logging.error(f"Failed to load SwitchBot icon: {icon_path}")
+            logging.error("Failed to load SwitchBot icon: %s", icon_path)
 
     def _update_label_text(self):
         active_widgets = self._widgets_alt if self._show_alt and hasattr(self, "_widgets_alt") else self._widgets
@@ -203,4 +203,4 @@ class SwitchBotWidget(BaseWidget):
                 set_tooltip(self, tooltip_text)
 
         except Exception as e:
-            logging.debug(f"Failed to update SwitchBot label: {e}")
+            logging.debug("Failed to update SwitchBot label: %s", e)
