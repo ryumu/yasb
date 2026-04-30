@@ -3,8 +3,6 @@ import re
 
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel
 
-from core.utils.utilities import add_shadow
-from core.utils.widgets.animation_manager import AnimationManager
 from core.validation.widgets.ryumu.desktop_name import DesktopNameConfig
 from core.widgets.base import BaseWidget
 
@@ -33,14 +31,12 @@ class DesktopNameWidget(BaseWidget):
         self._widget_container = QFrame()
         self._widget_container.setLayout(self._widget_container_layout)
         self._widget_container.setProperty("class", "widget-container")
-        add_shadow(self._widget_container, self.config.container_shadow.model_dump())
 
         self.widget_layout.addWidget(self._widget_container)
 
         self.build_widget_label(
             self.config.label,
             self.config.label_alt,
-            self.config.label_shadow.model_dump(),
         )
 
         self.register_callback("toggle_label", self._toggle_label)
@@ -54,9 +50,6 @@ class DesktopNameWidget(BaseWidget):
         self.start_timer()
 
     def _toggle_label(self):
-        if self.config.animation.enabled:
-            AnimationManager.animate(self, self.config.animation.type, self.config.animation.duration)
-
         self._show_alt_label = not self._show_alt_label
 
         for widget in self._widgets:
