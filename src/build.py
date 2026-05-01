@@ -34,6 +34,7 @@ build_options = {
     "includes": [
         "holidays.countries",
         "winrt.windows.applicationmodel",
+        "qt_css_engine",
     ],
     "optimize": 1,
     "include_files": [
