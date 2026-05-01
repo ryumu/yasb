@@ -86,12 +86,12 @@ class WindowsMedia(QObject, metaclass=QSingleton):
         try:
             manager = await SessionManager.request_async()
             self._manager = manager
-            await self._refresh_sessions(manager)
+            await self._refresh_sessions()
 
             manager.add_sessions_changed(self._create_callback_bridge(self._refresh_sessions))
             manager.add_current_session_changed(self._create_callback_bridge(self._on_current_session_changed))
 
-            await self._on_current_session_changed(manager)
+            await self._on_current_session_changed()
 
             # Start the refresh loop
             while self._running:
@@ -115,8 +115,11 @@ class WindowsMedia(QObject, metaclass=QSingleton):
                     pass
         self._trackers.clear()
 
-    async def _refresh_sessions(self, manager: SessionManager):
+    async def _refresh_sessions(self):
         """Refresh session states from the manager"""
+        manager = self._manager
+        if manager is None:
+            return
         sessions = manager.get_sessions()
         current_session = manager.get_current_session()
         current_ids = [s.source_app_user_model_id for s in sessions]
@@ -140,13 +143,13 @@ class WindowsMedia(QObject, metaclass=QSingleton):
 
                 # Add callbacks to events
                 t_mp = session.add_media_properties_changed(
-                    self._create_callback_bridge(self._on_media_properties_changed),
+                    self._create_session_callback_bridge(app_id, self._on_media_properties_changed),
                 )
                 t_tp = session.add_timeline_properties_changed(
-                    self._create_callback_bridge(self._on_timeline_properties_changed),
+                    self._create_session_callback_bridge(app_id, self._on_timeline_properties_changed),
                 )
                 t_pi = session.add_playback_info_changed(
-                    self._create_callback_bridge(self._on_playback_info_changed),
+                    self._create_session_callback_bridge(app_id, self._on_playback_info_changed),
                 )
 
                 # Store callbacks for cleanup
@@ -167,9 +170,9 @@ class WindowsMedia(QObject, metaclass=QSingleton):
         for tracker in self._trackers.values():
             tracker.is_current = tracker.app_id == current_id
 
-    async def _on_current_session_changed(self, manager: SessionManager):
+    async def _on_current_session_changed(self):
         """Handle current session change"""
-        await self._refresh_sessions(manager)
+        await self._refresh_sessions()
         for tracker in self._trackers.values():
             if tracker.is_current:
                 self._current_session_id = tracker.app_id
@@ -252,19 +255,46 @@ class WindowsMedia(QObject, metaclass=QSingleton):
 
         self.media_data_changed.emit(trackers)
 
-    def _safe_create_task(self, callback: Callable[[Any], Any], sender: Any) -> None:
+    def _safe_create_task(self, callback: Callable[[], Any]) -> None:
         """Create a task on the loop, silently ignoring shutdown races."""
         try:
-            self._loop.create_task(callback(sender))
+            self._loop.create_task(callback())
         except RuntimeError:
             pass
 
-    def _create_callback_bridge(self, callback: Callable[[Any], Any]):
-        """Create a callback bridge to run from WinRT thread"""
+    def _create_callback_bridge(self, callback: Callable[[], Any]):
+        """Create a no-arg callback bridge from a WinRT event to the asyncio loop.
+
+        The WinRT sender is intentionally ignored to avoid RPC_E_WRONG_THREAD —
+        COM proxies must not be passed across thread boundaries.
+        """
 
         def wrapper(s: Any, _a: Any) -> None:
             try:
-                self._loop.call_soon_threadsafe(self._safe_create_task, callback, s)
+                self._loop.call_soon_threadsafe(self._safe_create_task, callback)
+            except RuntimeError:
+                pass
+
+        return wrapper
+
+    def _create_session_callback_bridge(self, app_id: str, callback: Callable[[Any], Any]):
+        """Create a callback bridge for session events.
+
+        Captures app_id so the stored session reference (created on the main thread)
+        is used instead of the WinRT-thread sender, avoiding RPC_E_WRONG_THREAD.
+        """
+
+        def wrapper(s: Any, _a: Any) -> None:
+            def schedule() -> None:
+                state = self._trackers.get(app_id)
+                if state and state.session is not None:
+                    try:
+                        self._loop.create_task(callback(state.session))
+                    except RuntimeError:
+                        pass
+
+            try:
+                self._loop.call_soon_threadsafe(schedule)
             except RuntimeError:
                 pass
 
