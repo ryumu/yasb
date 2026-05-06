@@ -52,6 +52,7 @@ class WorkspaceButton(QPushButton):
         self.clicked.connect(self.activate_workspace)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, self.sizePolicy().verticalPolicy())
         self.hide()
+        self.update_and_redraw(self.status)
 
     def update_visible_buttons(self):
         visible_buttons = [btn for btn in self.parent_widget._workspace_buttons if btn.isVisible()]
@@ -60,6 +61,7 @@ class WorkspaceButton(QPushButton):
             new_class = " ".join([cls for cls in current_class.split() if not cls.startswith("button-")])
             new_class = f"{new_class} button-{index + 1}"
             button.setProperty("class", new_class)
+            refresh_widget_style(button)
 
     def update_and_redraw(self, status: WorkspaceStatus):
         self.status = status
@@ -115,6 +117,7 @@ class WorkspaceButtonWithIcons(QFrame):
         self.icon_labels = []
         self.hide()
         self.update_icons()
+        self.update_and_redraw(self.status)
 
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -127,6 +130,7 @@ class WorkspaceButtonWithIcons(QFrame):
             new_class = " ".join([cls for cls in current_class.split() if not cls.startswith("button-")])
             new_class = f"{new_class} button-{index + 1}"
             button.setProperty("class", new_class)
+            refresh_widget_style(button)
 
     def update_and_redraw(self, status: WorkspaceStatus):
         self.status = status
@@ -465,9 +469,9 @@ class WorkspaceWidget(BaseWidget):
         if self.config.hide_empty_workspaces and workspace_status == WORKSPACE_STATUS_EMPTY:
             workspace_btn.hide()
         else:
-            workspace_btn.show()
             if workspace_btn.status != workspace_status:
                 workspace_btn.update_and_redraw(workspace_status)
+            workspace_btn.show()
             workspace_btn.update_visible_buttons()
         self._get_workspace_layer(workspace_index)
 
@@ -489,7 +493,6 @@ class WorkspaceWidget(BaseWidget):
         workspace_btn.default_label = default_label
         workspace_btn.active_label = active_label
         workspace_btn.populated_label = populated_label
-        # Keep current status, only update displayed text.
         workspace_btn.update_and_redraw(workspace_btn.status)
 
     def _add_or_update_buttons(self) -> None:
@@ -504,9 +507,9 @@ class WorkspaceWidget(BaseWidget):
 
         if buttons_added:
             self._workspace_buttons.sort(key=lambda btn: btn.workspace_index)
-            self._clear_container_layout()
-            for workspace_btn in self._workspace_buttons:
-                self._workspace_container_layout.addWidget(workspace_btn)
+            for i, workspace_btn in enumerate(self._workspace_buttons):
+                if self._workspace_container_layout.indexOf(workspace_btn) != i:
+                    self._workspace_container_layout.insertWidget(i, workspace_btn)
                 self._update_button(workspace_btn)
 
     def _get_workspace_label(self, workspace_index):
