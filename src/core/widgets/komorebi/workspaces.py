@@ -55,7 +55,7 @@ class WorkspaceButton(QPushButton):
         self.update_and_redraw(self.status)
 
     def update_visible_buttons(self):
-        visible_buttons = [btn for btn in self.parent_widget._workspace_buttons if btn.isVisible()]
+        visible_buttons = [btn for btn in self.parent_widget._workspace_buttons if not btn.isHidden()]
         for index, button in enumerate(visible_buttons):
             current_class = button.property("class")
             new_class = " ".join([cls for cls in current_class.split() if not cls.startswith("button-")])
@@ -124,7 +124,7 @@ class WorkspaceButtonWithIcons(QFrame):
             self.activate_workspace()
 
     def update_visible_buttons(self):
-        visible_buttons = [btn for btn in self.parent_widget._workspace_buttons if btn.isVisible()]
+        visible_buttons = [btn for btn in self.parent_widget._workspace_buttons if not btn.isHidden()]
         for index, button in enumerate(visible_buttons):
             current_class = button.property("class")
             new_class = " ".join([cls for cls in current_class.split() if not cls.startswith("button-")])
@@ -402,7 +402,7 @@ class WorkspaceWidget(BaseWidget):
 
     def _update_komorebi_state(self, komorebi_state: dict) -> bool:
         try:
-            self._screen_hwnd = get_monitor_hwnd(int(QWidget.winId(self)))
+            self._screen_hwnd = self.monitor_hwnd or get_monitor_hwnd(int(QWidget.winId(self)))
             self._komorebi_state = komorebi_state
             if self._komorebi_state:
                 self._komorebi_screen = self._komorebic.get_screen_by_hwnd(self._komorebi_state, self._screen_hwnd)
