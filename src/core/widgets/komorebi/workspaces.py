@@ -522,8 +522,13 @@ class WorkspaceWidget(BaseWidget):
             ws_raw_name = workspace.get("name") if isinstance(workspace, dict) else None
         except Exception:
             ws_raw_name = None
+        try:
+            ws_name = ws_raw_name or self.config.label_default_name.format(
+                index=ws_index, monitor_index=ws_monitor_index
+            )
+        except Exception:
+            ws_name = str(ws_index)
 
-        ws_name = ws_raw_name or self.config.label_default_name.format(index=ws_index, monitor_index=ws_monitor_index)
         default_label = self.config.label_workspace_btn.format(
             name=ws_name, index=ws_index, monitor_index=ws_monitor_index
         )
