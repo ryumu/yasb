@@ -160,8 +160,8 @@ class WNDCLASS(ct.Structure):
 
 class COPYDATASTRUCT(ct.Structure):
     _fields_ = [
-        ("dwData", ct.c_uint64),
-        ("cbData", ct.c_uint64),
+        ("dwData", c_size_t),
+        ("cbData", DWORD),
         ("lpData", ct.c_void_p),
     ]
 
