@@ -29,13 +29,12 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 
-from core.bar_helper import ThemeState
-from core.utils.system import is_windows_10
+from core.bar_helper import GlobalState
+from core.utils.system import get_build_and_ubr
 from core.utils.utilities import refresh_widget_style
 from core.utils.win32.backdrop import enable_blur
 from core.utils.win32.utils import apply_qmenu_style
 from core.utils.win32.window_actions import force_foreground_focus
-from core.widgets.services.wallpapers.wallpaper_engine import WallpaperEngine
 from core.widgets.services.wallpapers.wallpaper_manager import WallpaperManager
 
 
@@ -160,10 +159,10 @@ class ImageLoader(QRunnable):
 class ImageGallery(QMainWindow):
     """ImageGallery displays a gallery of images with navigation and lazy loading features."""
 
-    def __init__(self, image_paths, gallery, engine=None):
+    def __init__(self, image_paths, gallery):
         super().__init__()
         self.gallery = gallery
-        self.engine = engine  # EngineConfig | None
+        self._build_and_ubr = get_build_and_ubr()
 
         if isinstance(image_paths, str):
             self.image_paths = [image_paths]
@@ -171,11 +170,18 @@ class ImageGallery(QMainWindow):
             self.image_paths = image_paths
 
         all_files = []
+        file_types = ("png", "jpg", "jpeg", "gif", "bmp", "tif", "tiff")
+        # webp support for wallpapers was introduced in Preview Build 26220.7653, and Stable Build 26100.8037 (24H2) / 26200.8037 (25H2)
+        # https://windowsforum.com/threads/kb5079473-windows-11-march-2026-update-sysmon-in-box-emoji-16-and-webp-wallpapers.404657/
+        if (self._build_and_ubr[0] >= 26220 and self._build_and_ubr[1] >= 7653) or (
+            self._build_and_ubr[0] >= 26100 and self._build_and_ubr[1] >= 8037
+        ):
+            file_types = file_types + ("webp",)
         for path in self.image_paths:
             if os.path.exists(path):
                 for root, _, files in os.walk(path):
                     for f in files:
-                        if f.lower().endswith(("png", "jpg", "jpeg", "gif", "bmp")):
+                        if f.lower().endswith(file_types):
                             all_files.append(os.path.join(root, f))
 
         self.image_files = sorted(all_files)  # or any ordering you prefer
@@ -283,9 +289,9 @@ class ImageGallery(QMainWindow):
         central_widget = QFrame()
         self.setCentralWidget(central_widget)
         central_widget.setProperty(
-            "class", "wallpapers-gallery-window dark" if ThemeState.is_dark() else "wallpapers-gallery-window"
+            "class", "wallpapers-gallery-window dark" if GlobalState.is_dark() else "wallpapers-gallery-window"
         )
-        self.setStyleSheet(ThemeState.stylesheet())
+        self.setStyleSheet(GlobalState.stylesheet())
 
         self.setContentsMargins(0, 0, 0, 0)
         layout = QVBoxLayout()
@@ -510,6 +516,7 @@ class ImageGallery(QMainWindow):
         self.loaded_images += 1
         if self.loaded_images >= self.expected_images:
             self.is_loading = False
+            self._update_nav_buttons()
 
     def update_image_label(self, image_path, pixmap, index):
         """Update label with loaded image."""
@@ -542,9 +549,20 @@ class ImageGallery(QMainWindow):
     def _navigate_page(self, direction):
         """Navigate pages: direction is 1 for next, -1 for prev."""
         new_index = self.current_index + (direction * self.images_per_page)
-        self.current_index = max(0, min(new_index, len(self.image_files) - self.images_per_page))
+        # Clamp to page-aligned boundaries so the last partial page is reachable
+        # but we never land on an off-grid offset (e.g. showing just 1 image).
+        last_page_start = ((len(self.image_files) - 1) // self.images_per_page) * self.images_per_page
+        self.current_index = max(0, min(new_index, last_page_start))
         self.load_images()
         self.focused_index = self.current_index
+        self._update_nav_buttons()
+
+    def _update_nav_buttons(self):
+        """Enable/disable prev/next buttons based on current page position."""
+        if hasattr(self, "prev_button"):
+            self.prev_button.setEnabled(self.current_index > 0)
+        if hasattr(self, "next_button"):
+            self.next_button.setEnabled(self.current_index + self.images_per_page < len(self.image_files))
 
     def load_next_images(self):
         """Load the next page of images."""
@@ -665,8 +683,8 @@ class ImageGallery(QMainWindow):
         self.update_focus()
 
         menu = QMenu(self)
-        menu.setProperty("class", "context-menu")
         apply_qmenu_style(menu)
+        menu.setProperty("class", "context-menu")
 
         action_all = menu.addAction("Set on all screens")
         action_all.triggered.connect(lambda: self._apply_wallpaper(image_path, None))
@@ -681,24 +699,19 @@ class ImageGallery(QMainWindow):
         self._menu_open = True
         menu.exec(pos)
         self._menu_open = False
+        if not self.is_closing and not self.isActiveWindow():
+            self.fade_out_and_close_gallery()
 
     def _apply_wallpaper_on_monitor(self, image_path: str, monitor_id: str) -> None:
         """Set wallpaper on a specific monitor (no animation)."""
         self.fade_out_and_close_gallery()
-        WallpaperManager().set_wallpaper(image_path, monitor_id=monitor_id)
+        WallpaperManager().set_wallpaper(image_path, monitor_id=monitor_id, animate=False)
 
     def _apply_wallpaper(self, image_path: str, monitor_id: str | None) -> None:
-        """Apply wallpaper with engine animation (all screens) or direct per-monitor."""
+        """Apply wallpaper. The manager handles engine animation and fallbacks."""
         if monitor_id is None:
-            animation = self.engine.animation if self.engine else "circle"
-            if self.engine and self.engine.enabled and not is_windows_10():
-                self.fade_out_and_close_gallery()
-                self._engine = WallpaperEngine(image_path, animation)
-                self._engine.destroyed.connect(lambda: setattr(self, "_engine", None))
-                self._engine.start()
-            else:
-                self.fade_out_and_close_gallery()
-                WallpaperManager().set_wallpaper(image_path)
+            self.fade_out_and_close_gallery()
+            WallpaperManager().set_wallpaper(image_path)
         else:
             self._apply_wallpaper_on_monitor(image_path, monitor_id)
 
